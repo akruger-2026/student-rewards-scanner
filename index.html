@@ -11,8 +11,9 @@
 
   <title>Student Rewards Scanner</title>
 
+  <!-- Quagga2 Barcode Scanner -->
   <script
-    src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js">
+    src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js">
   </script>
 
   <style>
@@ -25,11 +26,12 @@
       margin: 0;
       padding: 16px;
       background: #f4f6f8;
-      font-family: Arial, sans-serif;
+      font-family: Arial, Helvetica, sans-serif;
       text-align: center;
     }
 
     .card {
+      width: 100%;
       max-width: 520px;
       margin: 15px auto;
       background: white;
@@ -39,12 +41,14 @@
     }
 
     h1 {
-      margin: 0 0 5px;
+      margin: 0;
+      font-size: 30px;
     }
 
     .subtitle {
       color: #666;
-      margin-bottom: 25px;
+      margin: 8px 0 25px;
+      font-size: 17px;
     }
 
     button {
@@ -56,20 +60,63 @@
       color: white;
       font-size: 20px;
       font-weight: bold;
+      cursor: pointer;
     }
 
-    #reader {
+    button:disabled {
+      opacity: .6;
+    }
+
+    #scanner-container {
+      position: relative;
       width: 100%;
       margin-top: 20px;
       overflow: hidden;
       border-radius: 12px;
+      background: #111;
+      display: none;
+    }
+
+    #scanner {
+      width: 100%;
+      min-height: 300px;
+    }
+
+    #scanner video,
+    #scanner canvas {
+      width: 100% !important;
+      height: auto !important;
+      display: block;
+    }
+
+    .scan-guide {
+      position: absolute;
+      left: 5%;
+      right: 5%;
+      top: 38%;
+      height: 24%;
+      border: 3px solid white;
+      border-radius: 8px;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .scan-line {
+      position: absolute;
+      left: 8%;
+      right: 8%;
+      top: 50%;
+      border-top: 2px solid white;
+      pointer-events: none;
+      z-index: 11;
     }
 
     #status {
+      display: none;
       margin-top: 20px;
       padding: 18px;
       border-radius: 12px;
-      display: none;
+      line-height: 1.5;
     }
 
     .info {
@@ -91,14 +138,19 @@
     }
 
     .barcode {
-      font-size: 32px;
+      font-size: 34px;
       font-weight: bold;
       margin-top: 12px;
       word-break: break-all;
     }
 
+    .format {
+      margin-top: 8px;
+      color: #555;
+    }
+
     .tip {
-      margin-top: 15px;
+      margin-top: 18px;
       color: #666;
       font-size: 14px;
       line-height: 1.5;
@@ -115,23 +167,35 @@
   <h1>🏆 Student Rewards</h1>
 
   <div class="subtitle">
-    Badge Scanner Test
+    Sporting Event Check-In
   </div>
+
 
   <button
     id="scanButton"
-    type="button">
-    📷 START BADGE SCANNER
+    type="button"
+    onclick="startScanner()">
+    📷 SCAN STUDENT BADGE
   </button>
 
-  <div id="reader"></div>
+
+  <div id="scanner-container">
+
+    <div id="scanner"></div>
+
+    <div class="scan-guide"></div>
+
+    <div class="scan-line"></div>
+
+  </div>
+
 
   <div id="status"></div>
 
+
   <div class="tip">
-    Hold the badge horizontally if needed.<br>
-    Make sure the entire barcode is visible.<br>
-    Move the phone slowly closer and farther away.
+    Hold the badge horizontally.<br>
+    Keep the entire barcode inside the white rectangle.
   </div>
 
 </div>
@@ -139,28 +203,30 @@
 
 <script>
 
-let scanner = null;
-let locked = false;
+let scannerRunning = false;
+let scanLocked = false;
 
 
-window.addEventListener("load", function () {
+/* --------------------------
+   START SCANNER
+-------------------------- */
 
-  document
-    .getElementById("scanButton")
-    .addEventListener("click", startScanner);
-
-});
-
-
-async function startScanner() {
+function startScanner() {
 
   const button =
     document.getElementById("scanButton");
 
-  locked = false;
+  const container =
+    document.getElementById("scanner-container");
+
+
+  scanLocked = false;
 
   button.disabled = true;
-  button.innerHTML = "STARTING CAMERA...";
+
+  button.innerHTML =
+    "STARTING CAMERA...";
+
 
   showStatus(
     "Starting camera...",
@@ -168,170 +234,209 @@ async function startScanner() {
   );
 
 
-  try {
-
-    // Ask Safari for camera permission first.
-
-    const stream =
-      await navigator.mediaDevices.getUserMedia({
-
-        video: {
-          facingMode: {
-            ideal: "environment"
-          }
-        },
-
-        audio: false
-
-      });
+  container.style.display =
+    "block";
 
 
-    stream
-      .getTracks()
-      .forEach(function (track) {
-        track.stop();
-      });
-
-
-    scanner =
-      new Html5Qrcode("reader");
-
-
-    /*
-      IMPORTANT:
-      We are NOT restricting barcode formats
-      in this version.
-
-      The scanner can therefore try every
-      barcode format supported by the library.
-    */
-
-    const config = {
-
-      fps: 15,
-
-      /*
-        A much larger scanning region
-        for long student ID barcodes.
-      */
-
-      qrbox: function (
-        width,
-        height
-      ) {
-
-        return {
-
-          width:
-            Math.floor(width * 0.92),
-
-          height:
-            Math.floor(height * 0.60)
-
-        };
-
-      },
-
-      /*
-        This can improve scanning of
-        certain 1D barcodes.
-      */
-
-      experimentalFeatures: {
-        useBarCodeDetectorIfSupported: true
-      }
-
-    };
-
-
-    await scanner.start(
-
-      {
-        facingMode: "environment"
-      },
-
-      config,
-
-      barcodeFound,
-
-      function () {
-
-        // Keep looking.
-
-      }
-
-    );
-
-
-    button.innerHTML =
-      "📷 SCANNER ACTIVE";
-
+  if (typeof Quagga === "undefined") {
 
     showStatus(
-      "Scanner active. Place the ENTIRE barcode inside the camera area.",
-      "info"
+      "❌ Quagga barcode library did not load.",
+      "error"
     );
-
-  }
-
-  catch (error) {
 
     button.disabled = false;
 
+    return;
+
+  }
+
+
+  Quagga.init({
+
+    inputStream: {
+
+      name: "Live",
+
+      type: "LiveStream",
+
+      target:
+        document.querySelector("#scanner"),
+
+      constraints: {
+
+        facingMode: "environment",
+
+        width: {
+          ideal: 1920
+        },
+
+        height: {
+          ideal: 1080
+        }
+
+      },
+
+      area: {
+
+        top: "25%",
+
+        right: "5%",
+
+        left: "5%",
+
+        bottom: "25%"
+
+      }
+
+    },
+
+
+    locator: {
+
+      patchSize: "medium",
+
+      halfSample: false
+
+    },
+
+
+    locate: true,
+
+
+    frequency: 10,
+
+
+    decoder: {
+
+      readers: [
+
+        "code_128_reader",
+
+        "code_39_reader",
+
+        "code_93_reader",
+
+        "i2of5_reader",
+
+        "2of5_reader",
+
+        "codabar_reader",
+
+        "ean_reader",
+
+        "ean_8_reader",
+
+        "upc_reader",
+
+        "upc_e_reader"
+
+      ],
+
+      multiple: false
+
+    }
+
+  },
+
+  function(error) {
+
+    if (error) {
+
+      console.error(error);
+
+      showStatus(
+        "<strong>Scanner Error</strong><br><br>" +
+        escapeHtml(
+          error.message ||
+          String(error)
+        ),
+        "error"
+      );
+
+
+      button.disabled = false;
+
+      button.innerHTML =
+        "📷 SCAN STUDENT BADGE";
+
+      return;
+
+    }
+
+
+    Quagga.start();
+
+    scannerRunning = true;
+
+
     button.innerHTML =
-      "📷 START BADGE SCANNER";
+      "📷 CAMERA ACTIVE";
 
 
     showStatus(
-
-      "<strong>Camera/Scanner Error</strong>" +
-      "<br><br>" +
-      escapeHtml(
-        error.message ||
-        String(error)
-      ),
-
-      "error"
-
+      "Camera active. Place the barcode inside the white rectangle.",
+      "info"
     );
 
-  }
+  });
 
 }
 
 
-async function barcodeFound(
-  decodedText,
-  decodedResult
-) {
+/* --------------------------
+   BARCODE DETECTED
+-------------------------- */
 
-  if (locked) {
+Quagga.onDetected(function(data) {
+
+  if (scanLocked) {
     return;
   }
 
-  locked = true;
 
+  if (
+    !data ||
+    !data.codeResult ||
+    !data.codeResult.code
+  ) {
 
-  let format = "Unknown";
-
-  try {
-
-    if (
-      decodedResult &&
-      decodedResult.result &&
-      decodedResult.result.format
-    ) {
-
-      format =
-        decodedResult.result.format.formatName;
-
-    }
+    return;
 
   }
 
-  catch (error) {
 
-    console.log(error);
+  const code =
+    String(
+      data.codeResult.code
+    ).trim();
+
+
+  const format =
+    data.codeResult.format ||
+    "Unknown";
+
+
+  /*
+    Student IDs appear to be numeric.
+
+    Requiring several digits helps
+    prevent random false detections.
+  */
+
+  if (!/^\d{5,20}$/.test(code)) {
+
+    return;
+
+  }
+
+
+  scanLocked = true;
+
+
+  if (navigator.vibrate) {
+
+    navigator.vibrate(150);
 
   }
 
@@ -341,42 +446,59 @@ async function barcodeFound(
     "✅ <strong>BARCODE READ!</strong>" +
 
     "<div class='barcode'>" +
-    escapeHtml(decodedText) +
+    escapeHtml(code) +
     "</div>" +
 
-    "<br>Format: " +
-    escapeHtml(format),
+    "<div class='format'>" +
+    "Format: " +
+    escapeHtml(format) +
+    "</div>",
 
     "success"
 
   );
 
 
-  try {
-
-    await scanner.stop();
-
-    scanner.clear();
-
-  }
-
-  catch (error) {
-
-    console.log(error);
-
-  }
+  stopScanner();
 
 
   const button =
     document.getElementById("scanButton");
+
 
   button.disabled = false;
 
   button.innerHTML =
     "📷 SCAN ANOTHER BADGE";
 
+});
+
+
+/* --------------------------
+   STOP SCANNER
+-------------------------- */
+
+function stopScanner() {
+
+  if (scannerRunning) {
+
+    Quagga.stop();
+
+    scannerRunning = false;
+
+  }
+
+
+  document
+    .getElementById("scanner-container")
+    .style.display = "none";
+
 }
 
+
+/* --------------------------
+   STATUS
+-------------------------- */
 
 function showStatus(
   message,
@@ -386,12 +508,20 @@ function showStatus(
   const status =
     document.getElementById("status");
 
-  status.className = type;
 
-  status.innerHTML = message;
+  status.className =
+    type;
+
+
+  status.innerHTML =
+    message;
 
 }
 
+
+/* --------------------------
+   SAFE TEXT
+-------------------------- */
 
 function escapeHtml(value) {
 
