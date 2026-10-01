@@ -11,7 +11,7 @@
 
   <title>Student Rewards Scanner</title>
 
-  <!-- Quagga2 -->
+  <!-- Quagga2 Barcode Scanner -->
   <script
     src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js">
   </script>
@@ -51,6 +51,8 @@
       font-size: 17px;
     }
 
+    /* PIN AREA */
+
     .pin-section {
       background: #f8f9fa;
       padding: 18px;
@@ -85,6 +87,10 @@
       cursor: pointer;
     }
 
+    button:disabled {
+      opacity: .55;
+    }
+
     .test-button {
       background: #1a73e8;
       color: white;
@@ -96,9 +102,7 @@
       font-size: 20px;
     }
 
-    button:disabled {
-      opacity: .55;
-    }
+    /* CAMERA */
 
     #scanner-container {
       position: relative;
@@ -122,27 +126,47 @@
       display: block;
     }
 
+    /*
+      Wide horizontal guide designed
+      specifically for the Code 39
+      student badge barcode.
+    */
+
     .scan-guide {
       position: absolute;
+
       left: 5%;
       right: 5%;
-      top: 38%;
-      height: 24%;
+
+      top: 42%;
+
+      height: 16%;
+
       border: 3px solid white;
+
       border-radius: 8px;
+
       pointer-events: none;
+
       z-index: 10;
     }
 
     .scan-line {
       position: absolute;
+
       left: 8%;
       right: 8%;
+
       top: 50%;
+
       border-top: 2px solid white;
+
       pointer-events: none;
+
       z-index: 11;
     }
+
+    /* STATUS BOXES */
 
     #status {
       display: none;
@@ -215,7 +239,7 @@
   </div>
 
 
-  <!-- PIN -->
+  <!-- STAFF PIN -->
 
   <div class="pin-section">
 
@@ -242,7 +266,7 @@
   </div>
 
 
-  <!-- SCANNER -->
+  <!-- SCAN BUTTON -->
 
   <button
     id="scanButton"
@@ -253,6 +277,8 @@
     📷 SCAN STUDENT BADGE
   </button>
 
+
+  <!-- CAMERA -->
 
   <div id="scanner-container">
 
@@ -265,13 +291,20 @@
   </div>
 
 
+  <!-- RESULTS -->
+
   <div id="status"></div>
 
 
   <div class="tip">
-    First, enter the staff PIN and test the connection.
-    <br><br>
-    Once connected, scan the barcode on the student's badge.
+
+    Hold the badge horizontally.
+
+    <br>
+
+    Place the entire barcode inside
+    the white rectangle.
+
   </div>
 
 </div>
@@ -320,7 +353,9 @@ async function testConnection() {
 
 
   const button =
-    document.getElementById("testButton");
+    document.getElementById(
+      "testButton"
+    );
 
 
   button.disabled = true;
@@ -354,7 +389,9 @@ async function testConnection() {
 
 
       document
-        .getElementById("scanButton")
+        .getElementById(
+          "scanButton"
+        )
         .disabled = false;
 
 
@@ -363,10 +400,15 @@ async function testConnection() {
 
 
       showStatus(
+
         "✅ <strong>CONNECTED!</strong>" +
+
         "<br><br>" +
+
         "The scanner can communicate with the attendance system.",
+
         "success"
+
       );
 
     }
@@ -382,11 +424,14 @@ async function testConnection() {
 
 
       showStatus(
+
         escapeHtml(
           result.message ||
           "Connection failed."
         ),
+
         "error"
+
       );
 
     }
@@ -404,13 +449,18 @@ async function testConnection() {
 
 
     showStatus(
+
       "<strong>Connection Error</strong>" +
+
       "<br><br>" +
+
       escapeHtml(
         error.message ||
         String(error)
       ),
+
       "error"
+
     );
 
   }
@@ -419,7 +469,7 @@ async function testConnection() {
 
 
 /*************************************************
- * SEND REQUEST TO APPS SCRIPT
+ * SEND TO APPS SCRIPT
  *************************************************/
 
 async function sendToServer(
@@ -429,14 +479,19 @@ async function sendToServer(
 
   const response =
     await fetch(
+
       API_URL,
+
       {
 
-        method: "POST",
+        method:
+          "POST",
 
         headers: {
+
           "Content-Type":
             "text/plain;charset=utf-8"
+
         },
 
         body:
@@ -454,6 +509,7 @@ async function sendToServer(
           "follow"
 
       }
+
     );
 
 
@@ -497,7 +553,9 @@ function startScanner() {
 
 
   const button =
-    document.getElementById("scanButton");
+    document.getElementById(
+      "scanButton"
+    );
 
 
   const container =
@@ -537,10 +595,21 @@ function startScanner() {
 
     button.disabled = false;
 
+    button.innerHTML =
+      "📷 SCAN STUDENT BADGE";
+
     return;
 
   }
 
+
+  /*
+    This uses the same general Quagga
+    configuration that successfully
+    scanned badge 214079.
+
+    We now know the badges use Code 39.
+  */
 
   Quagga.init({
 
@@ -572,10 +641,15 @@ function startScanner() {
 
       },
 
+      /*
+        Restrict Quagga's processing
+        to a wide horizontal strip.
+      */
+
       area: {
 
         top:
-          "25%",
+          "38%",
 
         right:
           "5%",
@@ -584,7 +658,7 @@ function startScanner() {
           "5%",
 
         bottom:
-          "25%"
+          "38%"
 
       }
 
@@ -611,18 +685,16 @@ function startScanner() {
 
 
     /*
-     * We now know the student badges
-     * use CODE 39.
-     *
-     * Limiting the scanner to Code 39
-     * should improve speed and reduce
-     * false reads.
-     */
+      The SMARTtag badge barcode
+      successfully identified as Code 39.
+    */
 
     decoder: {
 
       readers: [
+
         "code_39_reader"
+
       ],
 
       multiple:
@@ -637,14 +709,22 @@ function startScanner() {
 
     if (error) {
 
+      console.error(error);
+
+
       showStatus(
+
         "<strong>Scanner Error</strong>" +
+
         "<br><br>" +
+
         escapeHtml(
           error.message ||
           String(error)
         ),
+
         "error"
+
       );
 
 
@@ -661,6 +741,7 @@ function startScanner() {
 
     Quagga.start();
 
+
     scannerRunning = true;
 
 
@@ -669,8 +750,11 @@ function startScanner() {
 
 
     showStatus(
-      "Camera active. Place the badge barcode inside the white rectangle.",
+
+      "Camera active. Place the entire barcode inside the white rectangle.",
+
       "info"
+
     );
 
   });
@@ -685,8 +769,11 @@ function startScanner() {
 Quagga.onDetected(
   async function(data) {
 
+
     if (scanLocked) {
+
       return;
+
     }
 
 
@@ -708,10 +795,11 @@ Quagga.onDetected(
 
 
     /*
-     * Your student IDs are six-digit
-     * numbers, so reject obviously
-     * incorrect reads.
-     */
+      Student IDs are six digits.
+
+      This helps prevent false
+      barcode reads.
+    */
 
     if (
       !/^\d{6}$/.test(code)
@@ -729,10 +817,19 @@ Quagga.onDetected(
 
 
     showStatus(
-      "Badge " +
+
+      "✅ Badge read: <strong>" +
+
       escapeHtml(code) +
-      " read.<br><br>Recording attendance...",
+
+      "</strong>" +
+
+      "<br><br>" +
+
+      "Recording attendance...",
+
       "info"
+
     );
 
 
@@ -761,13 +858,18 @@ Quagga.onDetected(
     catch (error) {
 
       showStatus(
+
         "<strong>Attendance Error</strong>" +
+
         "<br><br>" +
+
         escapeHtml(
           error.message ||
           String(error)
         ),
+
         "error"
+
       );
 
     }
@@ -789,12 +891,17 @@ Quagga.onDetected(
 
 
 /*************************************************
- * DISPLAY CHECK-IN RESULT
+ * DISPLAY RESULT
  *************************************************/
 
 function displayCheckInResult(
   result
 ) {
+
+
+  /*
+    SUCCESSFUL CHECK-IN
+  */
 
   if (
     result.success &&
@@ -807,35 +914,48 @@ function displayCheckInResult(
       "✅ <strong>CHECKED IN!</strong>" +
 
       "<div class='student-name'>" +
+
       escapeHtml(
         result.studentName
       ) +
+
       "</div>" +
+
+      "<br>" +
 
       "<div class='small'>" +
       "Events Attended" +
       "</div>" +
 
       "<div class='event-count'>" +
+
       escapeHtml(
         result.totalEvents
       ) +
+
       "</div>" +
 
       "<div>" +
+
       escapeHtml(
         result.event
       ) +
+
       "</div>",
 
       "success"
 
     );
 
+
     return;
 
   }
 
+
+  /*
+    DUPLICATE
+  */
 
   if (
     result.type ===
@@ -847,25 +967,34 @@ function displayCheckInResult(
       "⚠️ <strong>ALREADY CHECKED IN</strong>" +
 
       "<div class='student-name'>" +
+
       escapeHtml(
-        result.studentName || ""
+        result.studentName ||
+        ""
       ) +
+
       "</div>" +
 
       "<br>" +
 
       escapeHtml(
-        result.message
+        result.message ||
+        ""
       ),
 
       "warning"
 
     );
 
+
     return;
 
   }
 
+
+  /*
+    OTHER ERROR
+  */
 
   showStatus(
 
@@ -911,7 +1040,7 @@ function stopScanner() {
 
 
 /*************************************************
- * STATUS MESSAGE
+ * STATUS
  *************************************************/
 
 function showStatus(
