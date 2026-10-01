@@ -11,7 +11,6 @@
 
   <title>Student Rewards Scanner</title>
 
-  <!-- Barcode scanning library -->
   <script
     src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js">
   </script>
@@ -24,70 +23,53 @@
 
     body {
       margin: 0;
-      padding: 20px;
+      padding: 16px;
       background: #f4f6f8;
-      font-family: Arial, Helvetica, sans-serif;
+      font-family: Arial, sans-serif;
       text-align: center;
     }
 
     .card {
-      width: 100%;
-      max-width: 500px;
-      margin: 20px auto;
+      max-width: 520px;
+      margin: 15px auto;
       background: white;
-      padding: 30px 20px;
+      padding: 25px 18px;
       border-radius: 20px;
       box-shadow: 0 4px 18px rgba(0,0,0,.12);
     }
 
     h1 {
-      margin: 0;
-      font-size: 30px;
+      margin: 0 0 5px;
     }
 
     .subtitle {
       color: #666;
-      font-size: 17px;
-      margin-top: 8px;
-      margin-bottom: 30px;
+      margin-bottom: 25px;
     }
 
-    .scan-button {
+    button {
       width: 100%;
-      padding: 19px;
+      padding: 18px;
       border: none;
       border-radius: 12px;
       background: #188038;
       color: white;
       font-size: 20px;
       font-weight: bold;
-      cursor: pointer;
-    }
-
-    .scan-button:disabled {
-      opacity: .6;
-    }
-
-    .instructions {
-      color: #666;
-      font-size: 14px;
-      line-height: 1.4;
-      margin: 18px 5px;
     }
 
     #reader {
       width: 100%;
-      margin-top: 15px;
+      margin-top: 20px;
       overflow: hidden;
       border-radius: 12px;
     }
 
     #status {
-      display: none;
       margin-top: 20px;
       padding: 18px;
       border-radius: 12px;
-      line-height: 1.4;
+      display: none;
     }
 
     .info {
@@ -109,32 +91,17 @@
     }
 
     .barcode {
-      margin-top: 12px;
-      font-size: 34px;
+      font-size: 32px;
       font-weight: bold;
+      margin-top: 12px;
       word-break: break-all;
     }
 
-    .diagnostics {
-      margin-top: 30px;
-      padding-top: 20px;
-      border-top: 1px solid #ddd;
-      font-size: 14px;
-    }
-
-    #libraryStatus {
-      margin-top: 12px;
-      font-weight: bold;
-    }
-
-    .test-button {
+    .tip {
       margin-top: 15px;
-      padding: 12px 20px;
-      border: 2px solid #ccc;
-      border-radius: 10px;
-      background: white;
-      font-weight: bold;
-      font-size: 15px;
+      color: #666;
+      font-size: 14px;
+      line-height: 1.5;
     }
 
   </style>
@@ -143,65 +110,38 @@
 
 <body>
 
-  <div class="card">
+<div class="card">
 
-    <h1>🏆 Student Rewards</h1>
+  <h1>🏆 Student Rewards</h1>
 
-    <div class="subtitle">
-      Sporting Event Check-In
-    </div>
-
-
-    <button
-      id="scanButton"
-      class="scan-button"
-      type="button">
-      📷 SCAN STUDENT BADGE
-    </button>
-
-
-    <div class="instructions">
-      Tap the button and allow camera access.
-      Then point the back camera at the barcode
-      on the student's ID badge.
-    </div>
-
-
-    <div id="reader"></div>
-
-
-    <div id="status"></div>
-
-
-    <div class="diagnostics">
-
-      <strong>Scanner Status</strong>
-
-      <div id="libraryStatus">
-        Checking...
-      </div>
-
-      <button
-        id="testButton"
-        class="test-button"
-        type="button">
-        TEST BUTTON
-      </button>
-
-    </div>
-
+  <div class="subtitle">
+    Badge Scanner Test
   </div>
+
+  <button
+    id="scanButton"
+    type="button">
+    📷 START BADGE SCANNER
+  </button>
+
+  <div id="reader"></div>
+
+  <div id="status"></div>
+
+  <div class="tip">
+    Hold the badge horizontally if needed.<br>
+    Make sure the entire barcode is visible.<br>
+    Move the phone slowly closer and farther away.
+  </div>
+
+</div>
 
 
 <script>
 
 let scanner = null;
-let scanLocked = false;
+let locked = false;
 
-
-/* -----------------------------
-   WHEN PAGE LOADS
------------------------------ */
 
 window.addEventListener("load", function () {
 
@@ -209,112 +149,28 @@ window.addEventListener("load", function () {
     .getElementById("scanButton")
     .addEventListener("click", startScanner);
 
-
-  document
-    .getElementById("testButton")
-    .addEventListener("click", function () {
-
-      alert("The page JavaScript is working!");
-
-    });
-
-
-  checkScannerLibrary();
-
 });
 
 
-/* -----------------------------
-   CHECK LIBRARY
------------------------------ */
-
-function checkScannerLibrary() {
-
-  const status =
-    document.getElementById("libraryStatus");
-
-
-  if (typeof Html5Qrcode === "undefined") {
-
-    status.innerHTML =
-      "❌ Barcode library did not load.";
-
-    status.style.color =
-      "#d93025";
-
-  }
-
-  else {
-
-    status.innerHTML =
-      "✅ Barcode library loaded.";
-
-    status.style.color =
-      "#188038";
-
-  }
-
-}
-
-
-/* -----------------------------
-   START CAMERA
------------------------------ */
-
 async function startScanner() {
-
-  scanLocked = false;
 
   const button =
     document.getElementById("scanButton");
 
+  locked = false;
+
+  button.disabled = true;
+  button.innerHTML = "STARTING CAMERA...";
 
   showStatus(
-    "Preparing camera...",
+    "Starting camera...",
     "info"
   );
 
 
-  if (typeof Html5Qrcode === "undefined") {
-
-    showStatus(
-      "❌ The barcode scanner library did not load.",
-      "error"
-    );
-
-    return;
-
-  }
-
-
-  if (
-    !navigator.mediaDevices ||
-    !navigator.mediaDevices.getUserMedia
-  ) {
-
-    showStatus(
-      "❌ Camera access is not available in this browser.",
-      "error"
-    );
-
-    return;
-
-  }
-
-
-  button.disabled = true;
-
-  button.innerHTML =
-    "STARTING CAMERA...";
-
-
   try {
 
-    /*
-      Ask Safari for camera permission
-      directly before starting the
-      barcode scanner.
-    */
+    // Ask Safari for camera permission first.
 
     const stream =
       await navigator.mediaDevices.getUserMedia({
@@ -330,136 +186,60 @@ async function startScanner() {
       });
 
 
-    /*
-      Permission succeeded.
-      Release this temporary stream.
-    */
-
     stream
       .getTracks()
       .forEach(function (track) {
-
         track.stop();
-
       });
 
-
-    showStatus(
-      "✅ Camera permission granted. Starting scanner...",
-      "info"
-    );
-
-
-    await launchBarcodeScanner();
-
-  }
-
-  catch (error) {
-
-    button.disabled = false;
-
-    button.innerHTML =
-      "📷 SCAN STUDENT BADGE";
-
-
-    showStatus(
-
-      "<strong>Camera Error</strong>" +
-
-      "<br><br>Error: " +
-
-      escapeHtml(
-        error.name || "Unknown"
-      ) +
-
-      "<br><br>" +
-
-      escapeHtml(
-        error.message || String(error)
-      ),
-
-      "error"
-
-    );
-
-  }
-
-}
-
-
-/* -----------------------------
-   LAUNCH BARCODE SCANNER
------------------------------ */
-
-async function launchBarcodeScanner() {
-
-  const button =
-    document.getElementById("scanButton");
-
-
-  try {
 
     scanner =
       new Html5Qrcode("reader");
 
 
+    /*
+      IMPORTANT:
+      We are NOT restricting barcode formats
+      in this version.
+
+      The scanner can therefore try every
+      barcode format supported by the library.
+    */
+
     const config = {
 
-      fps: 10,
+      fps: 15,
+
+      /*
+        A much larger scanning region
+        for long student ID barcodes.
+      */
 
       qrbox: function (
-        viewfinderWidth,
-        viewfinderHeight
+        width,
+        height
       ) {
-
-        let width =
-          Math.floor(
-            viewfinderWidth * 0.85
-          );
-
-
-        let height =
-          Math.floor(
-            width * 0.32
-          );
-
-
-        if (
-          height >
-          viewfinderHeight * 0.75
-        ) {
-
-          height =
-            Math.floor(
-              viewfinderHeight * 0.75
-            );
-
-        }
-
 
         return {
 
-          width: width,
+          width:
+            Math.floor(width * 0.92),
 
-          height: height
+          height:
+            Math.floor(height * 0.60)
 
         };
 
       },
 
-      formatsToSupport: [
+      /*
+        This can improve scanning of
+        certain 1D barcodes.
+      */
 
-        Html5QrcodeSupportedFormats.CODE_39,
-
-        Html5QrcodeSupportedFormats.CODE_93,
-
-        Html5QrcodeSupportedFormats.CODE_128,
-
-        Html5QrcodeSupportedFormats.CODABAR,
-
-        Html5QrcodeSupportedFormats.ITF
-
-      ]
+      experimentalFeatures: {
+        useBarCodeDetectorIfSupported: true
+      }
 
     };
 
@@ -472,15 +252,11 @@ async function launchBarcodeScanner() {
 
       config,
 
-      barcodeDetected,
+      barcodeFound,
 
       function () {
 
-        /*
-          This function fires repeatedly
-          while no barcode is detected.
-          We intentionally do nothing.
-        */
+        // Keep looking.
 
       }
 
@@ -488,11 +264,11 @@ async function launchBarcodeScanner() {
 
 
     button.innerHTML =
-      "📷 CAMERA ACTIVE";
+      "📷 SCANNER ACTIVE";
 
 
     showStatus(
-      "Camera active. Hold the badge barcode inside the scanning area.",
+      "Scanner active. Place the ENTIRE barcode inside the camera area.",
       "info"
     );
 
@@ -503,17 +279,16 @@ async function launchBarcodeScanner() {
     button.disabled = false;
 
     button.innerHTML =
-      "📷 SCAN STUDENT BADGE";
+      "📷 START BADGE SCANNER";
 
 
     showStatus(
 
-      "<strong>Scanner Error</strong>" +
-
+      "<strong>Camera/Scanner Error</strong>" +
       "<br><br>" +
-
       escapeHtml(
-        error.message || String(error)
+        error.message ||
+        String(error)
       ),
 
       "error"
@@ -525,22 +300,40 @@ async function launchBarcodeScanner() {
 }
 
 
-/* -----------------------------
-   BARCODE DETECTED
------------------------------ */
-
-async function barcodeDetected(
-  decodedText
+async function barcodeFound(
+  decodedText,
+  decodedResult
 ) {
 
-  if (scanLocked) {
-
+  if (locked) {
     return;
+  }
+
+  locked = true;
+
+
+  let format = "Unknown";
+
+  try {
+
+    if (
+      decodedResult &&
+      decodedResult.result &&
+      decodedResult.result.format
+    ) {
+
+      format =
+        decodedResult.result.format.formatName;
+
+    }
 
   }
 
+  catch (error) {
 
-  scanLocked = true;
+    console.log(error);
+
+  }
 
 
   showStatus(
@@ -548,10 +341,11 @@ async function barcodeDetected(
     "✅ <strong>BARCODE READ!</strong>" +
 
     "<div class='barcode'>" +
-
     escapeHtml(decodedText) +
+    "</div>" +
 
-    "</div>",
+    "<br>Format: " +
+    escapeHtml(format),
 
     "success"
 
@@ -560,13 +354,9 @@ async function barcodeDetected(
 
   try {
 
-    if (scanner) {
+    await scanner.stop();
 
-      await scanner.stop();
-
-      scanner.clear();
-
-    }
+    scanner.clear();
 
   }
 
@@ -580,7 +370,6 @@ async function barcodeDetected(
   const button =
     document.getElementById("scanButton");
 
-
   button.disabled = false;
 
   button.innerHTML =
@@ -588,10 +377,6 @@ async function barcodeDetected(
 
 }
 
-
-/* -----------------------------
-   STATUS MESSAGE
------------------------------ */
 
 function showStatus(
   message,
@@ -601,20 +386,12 @@ function showStatus(
   const status =
     document.getElementById("status");
 
+  status.className = type;
 
-  status.className =
-    type;
-
-
-  status.innerHTML =
-    message;
+  status.innerHTML = message;
 
 }
 
-
-/* -----------------------------
-   SAFELY DISPLAY TEXT
------------------------------ */
 
 function escapeHtml(value) {
 
