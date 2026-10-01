@@ -51,7 +51,7 @@
       font-size: 17px;
     }
 
-    /* PIN AREA */
+    /* PIN */
 
     .pin-section {
       background: #f8f9fa;
@@ -127,46 +127,34 @@
     }
 
     /*
-      Wide horizontal guide designed
-      specifically for the Code 39
-      student badge barcode.
+      Keep this wide and shallow.
+      This is the configuration that works
+      well with the Code 39 student badges.
     */
 
     .scan-guide {
       position: absolute;
-
       left: 5%;
       right: 5%;
-
       top: 42%;
-
       height: 16%;
-
       border: 3px solid white;
-
       border-radius: 8px;
-
       pointer-events: none;
-
       z-index: 10;
     }
 
     .scan-line {
       position: absolute;
-
       left: 8%;
       right: 8%;
-
       top: 50%;
-
       border-top: 2px solid white;
-
       pointer-events: none;
-
       z-index: 11;
     }
 
-    /* STATUS BOXES */
+    /* STATUS */
 
     #status {
       display: none;
@@ -206,15 +194,75 @@
       margin-top: 10px;
     }
 
+    .events-label {
+      color: #666;
+      font-size: 14px;
+      margin-top: 12px;
+    }
+
     .event-count {
       font-size: 44px;
       font-weight: bold;
-      margin: 8px 0;
+      margin: 0;
     }
 
-    .small {
-      color: #666;
-      font-size: 14px;
+    .event-name {
+      font-size: 15px;
+      margin-bottom: 15px;
+    }
+
+    /* REWARDS */
+
+    .reward-card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 16px;
+      border: 2px solid #f9ab00;
+    }
+
+    .reward-heading {
+      font-size: 15px;
+      font-weight: bold;
+      color: #8a5a00;
+      margin-bottom: 5px;
+    }
+
+    .reward-name {
+      font-size: 22px;
+      font-weight: bold;
+      margin: 5px 0;
+    }
+
+    .reward-progress {
+      font-size: 16px;
+      margin-top: 8px;
+    }
+
+    .unlocked-card {
+      background: #fff7d6;
+      border: 3px solid #f9ab00;
+      border-radius: 14px;
+      padding: 18px;
+      margin-top: 16px;
+    }
+
+    .unlocked-title {
+      font-size: 23px;
+      font-weight: bold;
+    }
+
+    .available-card {
+      background: #f3e8fd;
+      border: 2px solid #9334e6;
+      border-radius: 12px;
+      padding: 14px;
+      margin-top: 14px;
+    }
+
+    .available-title {
+      font-weight: bold;
+      color: #681da8;
     }
 
     .tip {
@@ -291,20 +339,12 @@
   </div>
 
 
-  <!-- RESULTS -->
-
   <div id="status"></div>
 
 
   <div class="tip">
-
-    Hold the badge horizontally.
-
-    <br>
-
-    Place the entire barcode inside
-    the white rectangle.
-
+    Hold the badge horizontally.<br>
+    Place the entire barcode inside the white rectangle.
   </div>
 
 </div>
@@ -348,7 +388,6 @@ async function testConnection() {
     );
 
     return;
-
   }
 
 
@@ -400,15 +439,10 @@ async function testConnection() {
 
 
       showStatus(
-
         "✅ <strong>CONNECTED!</strong>" +
-
         "<br><br>" +
-
-        "The scanner can communicate with the attendance system.",
-
+        "Ready to scan student badges.",
         "success"
-
       );
 
     }
@@ -424,16 +458,12 @@ async function testConnection() {
 
 
       showStatus(
-
         escapeHtml(
           result.message ||
           "Connection failed."
         ),
-
         "error"
-
       );
-
     }
 
   }
@@ -449,22 +479,15 @@ async function testConnection() {
 
 
     showStatus(
-
       "<strong>Connection Error</strong>" +
-
       "<br><br>" +
-
       escapeHtml(
         error.message ||
         String(error)
       ),
-
       "error"
-
     );
-
   }
-
 }
 
 
@@ -528,9 +551,7 @@ async function sendToServer(
     throw new Error(
       "The attendance server returned an unexpected response."
     );
-
   }
-
 }
 
 
@@ -548,7 +569,6 @@ function startScanner() {
     );
 
     return;
-
   }
 
 
@@ -599,17 +619,15 @@ function startScanner() {
       "📷 SCAN STUDENT BADGE";
 
     return;
-
   }
 
 
-  /*
-    This uses the same general Quagga
-    configuration that successfully
-    scanned badge 214079.
-
-    We now know the badges use Code 39.
-  */
+  /*************************************************
+   * QUAGGA
+   *
+   * KEEP THIS SCANNER CONFIGURATION.
+   * It is tuned for the Code 39 badges.
+   *************************************************/
 
   Quagga.init({
 
@@ -640,11 +658,6 @@ function startScanner() {
         }
 
       },
-
-      /*
-        Restrict Quagga's processing
-        to a wide horizontal strip.
-      */
 
       area: {
 
@@ -684,17 +697,10 @@ function startScanner() {
       10,
 
 
-    /*
-      The SMARTtag badge barcode
-      successfully identified as Code 39.
-    */
-
     decoder: {
 
       readers: [
-
         "code_39_reader"
-
       ],
 
       multiple:
@@ -713,18 +719,13 @@ function startScanner() {
 
 
       showStatus(
-
         "<strong>Scanner Error</strong>" +
-
         "<br><br>" +
-
         escapeHtml(
           error.message ||
           String(error)
         ),
-
         "error"
-
       );
 
 
@@ -733,14 +734,11 @@ function startScanner() {
       button.innerHTML =
         "📷 SCAN STUDENT BADGE";
 
-
       return;
-
     }
 
 
     Quagga.start();
-
 
     scannerRunning = true;
 
@@ -750,15 +748,10 @@ function startScanner() {
 
 
     showStatus(
-
       "Camera active. Place the entire barcode inside the white rectangle.",
-
       "info"
-
     );
-
   });
-
 }
 
 
@@ -771,9 +764,7 @@ Quagga.onDetected(
 
 
     if (scanLocked) {
-
       return;
-
     }
 
 
@@ -782,9 +773,7 @@ Quagga.onDetected(
       !data.codeResult ||
       !data.codeResult.code
     ) {
-
       return;
-
     }
 
 
@@ -795,18 +784,13 @@ Quagga.onDetected(
 
 
     /*
-      Student IDs are six digits.
-
-      This helps prevent false
-      barcode reads.
-    */
+     * Student IDs are six digits.
+     */
 
     if (
       !/^\d{6}$/.test(code)
     ) {
-
       return;
-
     }
 
 
@@ -817,19 +801,12 @@ Quagga.onDetected(
 
 
     showStatus(
-
       "✅ Badge read: <strong>" +
-
       escapeHtml(code) +
-
       "</strong>" +
-
       "<br><br>" +
-
       "Recording attendance...",
-
       "info"
-
     );
 
 
@@ -858,20 +835,14 @@ Quagga.onDetected(
     catch (error) {
 
       showStatus(
-
         "<strong>Attendance Error</strong>" +
-
         "<br><br>" +
-
         escapeHtml(
           error.message ||
           String(error)
         ),
-
         "error"
-
       );
-
     }
 
 
@@ -885,13 +856,12 @@ Quagga.onDetected(
 
     button.innerHTML =
       "📷 SCAN NEXT STUDENT";
-
   }
 );
 
 
 /*************************************************
- * DISPLAY RESULT
+ * DISPLAY CHECK-IN RESULT
  *************************************************/
 
 function displayCheckInResult(
@@ -900,8 +870,8 @@ function displayCheckInResult(
 
 
   /*
-    SUCCESSFUL CHECK-IN
-  */
+   * SUCCESS
+   */
 
   if (
     result.success &&
@@ -909,7 +879,7 @@ function displayCheckInResult(
       "CHECKED_IN"
   ) {
 
-    showStatus(
+    let html =
 
       "✅ <strong>CHECKED IN!</strong>" +
 
@@ -921,10 +891,8 @@ function displayCheckInResult(
 
       "</div>" +
 
-      "<br>" +
-
-      "<div class='small'>" +
-      "Events Attended" +
+      "<div class='events-label'>" +
+      "EVENTS ATTENDED" +
       "</div>" +
 
       "<div class='event-count'>" +
@@ -935,34 +903,41 @@ function displayCheckInResult(
 
       "</div>" +
 
-      "<div>" +
+      "<div class='event-name'>" +
 
       escapeHtml(
         result.event
       ) +
 
-      "</div>",
+      "</div>";
 
+
+    html +=
+      buildRewardDisplay(
+        result.rewards
+      );
+
+
+    showStatus(
+      html,
       "success"
-
     );
 
 
     return;
-
   }
 
 
   /*
-    DUPLICATE
-  */
+   * DUPLICATE
+   */
 
   if (
     result.type ===
       "DUPLICATE"
   ) {
 
-    showStatus(
+    let html =
 
       "⚠️ <strong>ALREADY CHECKED IN</strong>" +
 
@@ -980,37 +955,234 @@ function displayCheckInResult(
       escapeHtml(
         result.message ||
         ""
-      ),
+      );
 
+
+    /*
+     * Still show reward progress
+     * when a duplicate badge is scanned.
+     */
+
+    html +=
+      buildRewardDisplay(
+        result.rewards
+      );
+
+
+    showStatus(
+      html,
       "warning"
-
     );
 
 
     return;
-
   }
 
 
   /*
-    OTHER ERROR
-  */
+   * OTHER ERROR
+   */
 
   showStatus(
-
     "<strong>Unable to Check In</strong>" +
-
     "<br><br>" +
-
     escapeHtml(
       result.message ||
       "Unknown error."
     ),
-
     "error"
-
   );
+}
 
+
+/*************************************************
+ * BUILD REWARD DISPLAY
+ *************************************************/
+
+function buildRewardDisplay(
+  rewards
+) {
+
+  if (!rewards) {
+    return "";
+  }
+
+
+  let html = "";
+
+
+  /*************************************************
+   * JUST UNLOCKED
+   *************************************************/
+
+  if (
+    rewards.justUnlocked &&
+    !rewards.justUnlocked.redeemed
+  ) {
+
+    html +=
+
+      "<div class='unlocked-card'>" +
+
+      "<div class='unlocked-title'>" +
+      "🎉 REWARD UNLOCKED!" +
+      "</div>" +
+
+      "<div class='reward-name'>" +
+
+      escapeHtml(
+        rewards.justUnlocked.reward
+      ) +
+
+      "</div>" +
+
+      "<div>" +
+
+      escapeHtml(
+        rewards.justUnlocked.level
+      ) +
+
+      " • " +
+
+      escapeHtml(
+        rewards.justUnlocked.eventsRequired
+      ) +
+
+      " Events" +
+
+      "</div>" +
+
+      "<div class='reward-progress'>" +
+      "Available to Redeem" +
+      "</div>" +
+
+      "</div>";
+  }
+
+
+  /*************************************************
+   * AVAILABLE REWARDS
+   *************************************************/
+
+  if (
+    rewards.availableCount > 0
+  ) {
+
+    html +=
+
+      "<div class='available-card'>" +
+
+      "<div class='available-title'>" +
+
+      "🎁 " +
+
+      escapeHtml(
+        rewards.availableCount
+      ) +
+
+      (
+        rewards.availableCount === 1
+          ? " Reward Available"
+          : " Rewards Available"
+      ) +
+
+      "</div>" +
+
+      "<div>" +
+      "Not yet redeemed" +
+      "</div>" +
+
+      "</div>";
+  }
+
+
+  /*************************************************
+   * NEXT REWARD
+   *************************************************/
+
+  if (
+    rewards.nextReward
+  ) {
+
+    const remaining =
+      rewards
+        .nextReward
+        .eventsRemaining;
+
+
+    html +=
+
+      "<div class='reward-card'>" +
+
+      "<div class='reward-heading'>" +
+      "🎁 NEXT REWARD" +
+      "</div>" +
+
+      "<div class='reward-name'>" +
+
+      escapeHtml(
+        rewards.nextReward.reward
+      ) +
+
+      "</div>" +
+
+      "<div>" +
+
+      escapeHtml(
+        rewards.nextReward.level
+      ) +
+
+      " • " +
+
+      escapeHtml(
+        rewards.nextReward.eventsRequired
+      ) +
+
+      " Events" +
+
+      "</div>" +
+
+      "<div class='reward-progress'>" +
+
+      (
+        remaining === 1
+          ? "<strong>1 more event to go!</strong>"
+          : "<strong>" +
+            escapeHtml(remaining) +
+            " more events to go!</strong>"
+      ) +
+
+      "</div>" +
+
+      "</div>";
+  }
+
+
+  /*************************************************
+   * ALL REWARD LEVELS EARNED
+   *************************************************/
+
+  else if (
+    rewards.allRewardsEarned
+  ) {
+
+    html +=
+
+      "<div class='reward-card'>" +
+
+      "<div class='reward-heading'>" +
+      "🏆 ALL REWARD LEVELS EARNED" +
+      "</div>" +
+
+      "<div class='reward-progress'>" +
+      "Amazing attendance!" +
+      "</div>" +
+
+      "</div>";
+  }
+
+
+  return html;
 }
 
 
@@ -1025,7 +1197,6 @@ function stopScanner() {
     Quagga.stop();
 
     scannerRunning = false;
-
   }
 
 
@@ -1035,7 +1206,6 @@ function stopScanner() {
     )
     .style.display =
       "none";
-
 }
 
 
@@ -1060,7 +1230,6 @@ function showStatus(
 
   status.innerHTML =
     message;
-
 }
 
 
@@ -1081,7 +1250,6 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;")
 
     .replace(/'/g, "&#039;");
-
 }
 
 </script>
