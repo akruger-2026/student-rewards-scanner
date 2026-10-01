@@ -152,7 +152,7 @@
       line-height: 1.4;
     }
 
-    /* MODE */
+    /* MODES */
 
     #modeSection {
       display: none;
@@ -175,8 +175,12 @@
     .mode-button {
       background: #e8eaed;
       color: #333;
-      padding: 15px 8px;
-      font-size: 16px;
+      padding: 15px 6px;
+      font-size: 15px;
+    }
+
+    .setup-mode-button {
+      grid-column: 1 / -1;
     }
 
     .mode-button.active-checkin {
@@ -186,6 +190,11 @@
 
     .mode-button.active-reward {
       background: #9334e6;
+      color: white;
+    }
+
+    .mode-button.active-setup {
+      background: #1a73e8;
       color: white;
     }
 
@@ -227,7 +236,7 @@
     }
 
     /*
-      WORKING CODE 39 SCANNER GUIDE.
+      WORKING CODE 39 SCANNER SETTINGS.
       DO NOT CHANGE.
     */
 
@@ -251,6 +260,91 @@
       border-top: 2px solid white;
       pointer-events: none;
       z-index: 11;
+    }
+
+    /* EVENT SETUP */
+
+    #eventSetupSection {
+      display: none;
+      margin-top: 20px;
+    }
+
+    .setup-header {
+      background: #e8f0fe;
+      border: 2px solid #1a73e8;
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .setup-header-title {
+      font-size: 21px;
+      font-weight: bold;
+      color: #174ea6;
+    }
+
+    .setup-header-text {
+      margin-top: 7px;
+      font-size: 14px;
+      color: #555;
+      line-height: 1.4;
+    }
+
+    .event-option {
+      background: white;
+      border: 2px solid #dadce0;
+      border-radius: 14px;
+      padding: 16px;
+      margin-top: 12px;
+      text-align: left;
+    }
+
+    .event-option.current {
+      background: #e6f4ea;
+      border: 3px solid #34a853;
+    }
+
+    .event-option-name {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .event-option-date {
+      margin-top: 5px;
+      color: #666;
+      font-size: 15px;
+    }
+
+    .event-option-id {
+      margin-top: 4px;
+      color: #888;
+      font-size: 12px;
+    }
+
+    .current-badge {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 7px 11px;
+      background: #188038;
+      color: white;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .activate-button {
+      margin-top: 13px;
+      background: #1a73e8;
+      color: white;
+      font-size: 16px;
+      padding: 14px;
+    }
+
+    .refresh-button {
+      margin-top: 15px;
+      background: #5f6368;
+      color: white;
+      font-size: 16px;
     }
 
     /* STATUS */
@@ -365,8 +459,6 @@
       margin-top: 14px;
     }
 
-    /* REDEMPTION */
-
     .redeem-card {
       background: white;
       border: 3px solid #9334e6;
@@ -472,6 +564,13 @@
         🎁 REDEEM<br>REWARD
       </button>
 
+      <button
+        id="setupModeButton"
+        class="mode-button setup-mode-button"
+        onclick="setMode('EVENT_SETUP')">
+        ⚙️ EVENT SETUP
+      </button>
+
     </div>
 
   </div>
@@ -502,12 +601,19 @@
   </div>
 
 
+  <!-- EVENT SETUP -->
+
+  <div id="eventSetupSection"></div>
+
+
   <!-- RESULTS -->
 
   <div id="status"></div>
 
 
-  <div class="tip" id="tip">
+  <div
+    class="tip"
+    id="tip">
     Connect the scanner to begin.
   </div>
 
@@ -614,10 +720,6 @@ async function testConnection() {
       );
 
 
-      /*
-       * Start in check-in mode.
-       */
-
       setMode(
         "CHECK_IN"
       );
@@ -629,9 +731,7 @@ async function testConnection() {
         "success"
       );
 
-    }
-
-    else {
+    } else {
 
       connectionVerified = false;
 
@@ -650,9 +750,7 @@ async function testConnection() {
       );
     }
 
-  }
-
-  catch (error) {
+  } catch (error) {
 
     connectionVerified = false;
 
@@ -691,10 +789,6 @@ function displayActiveEvent(
   section.style.display =
     "block";
 
-
-  /*
-   * ACTIVE EVENT IS READY
-   */
 
   if (
     event &&
@@ -737,10 +831,6 @@ function displayActiveEvent(
   }
 
 
-  /*
-   * ACTIVE EVENT PROBLEM
-   */
-
   activeEventReady = false;
 
 
@@ -764,11 +854,9 @@ function displayActiveEvent(
 
     message =
       "More than one event is marked TRUE. " +
-      "Open the Events tab and leave only one event active.";
+      "Use Event Setup to select the correct event.";
 
-  }
-
-  else if (
+  } else if (
     event &&
     event.message
   ) {
@@ -794,7 +882,7 @@ function displayActiveEvent(
 
     "<br>" +
 
-    "<strong>Reward Redemption is still available.</strong>" +
+    "<strong>Reward Redemption and Event Setup are still available.</strong>" +
 
     "</div>";
 }
@@ -821,17 +909,38 @@ function setMode(mode) {
       "checkinModeButton"
     );
 
-
   const rewardButton =
     document.getElementById(
       "rewardModeButton"
     );
 
+  const setupButton =
+    document.getElementById(
+      "setupModeButton"
+    );
 
   const scanButton =
     document.getElementById(
       "scanButton"
     );
+
+  const setupSection =
+    document.getElementById(
+      "eventSetupSection"
+    );
+
+
+  checkinButton.className =
+    "mode-button";
+
+  rewardButton.className =
+    "mode-button";
+
+  setupButton.className =
+    "mode-button setup-mode-button";
+
+  setupSection.style.display =
+    "none";
 
 
   if (
@@ -843,74 +952,84 @@ function setMode(mode) {
       "mode-button active-checkin";
 
 
-    rewardButton.className =
-      "mode-button";
-
+    scanButton.style.display =
+      "block";
 
     scanButton.className =
       "scan-button";
 
-
     scanButton.innerHTML =
       "📷 SCAN STUDENT BADGE";
 
-
-    /*
-     * Check-in requires an active event.
-     */
 
     scanButton.disabled =
       !connectionVerified ||
       !activeEventReady;
 
 
-    if (!activeEventReady) {
+    checkinButton.disabled =
+      !activeEventReady;
 
-      checkinButton.disabled =
-        true;
 
-    }
+    clearStatus();
 
-    else {
+    updateTip();
 
-      checkinButton.disabled =
-        false;
-    }
-
+    return;
   }
 
-  else {
 
-    checkinButton.className =
-      "mode-button";
-
+  if (
+    mode ===
+    "REWARD_LOOKUP"
+  ) {
 
     rewardButton.className =
       "mode-button active-reward";
 
 
+    scanButton.style.display =
+      "block";
+
     scanButton.className =
       "scan-button reward-mode";
-
 
     scanButton.innerHTML =
       "🎁 SCAN BADGE FOR REWARDS";
 
-
-    /*
-     * Reward redemption does NOT require
-     * an active event.
-     */
-
     scanButton.disabled =
       !connectionVerified;
 
+
+    clearStatus();
+
+    updateTip();
+
+    return;
   }
+
+
+  /*********************************************
+   * EVENT SETUP MODE
+   *********************************************/
+
+  setupButton.className =
+    "mode-button setup-mode-button active-setup";
+
+
+  scanButton.style.display =
+    "none";
+
+
+  setupSection.style.display =
+    "block";
 
 
   clearStatus();
 
   updateTip();
+
+  loadEvents();
 }
 
 
@@ -928,7 +1047,7 @@ function updateTip() {
 
   if (
     currentMode ===
-    "CHECK_IN"
+      "CHECK_IN"
   ) {
 
     if (
@@ -940,25 +1059,37 @@ function updateTip() {
         "<br>" +
         "Scanning records attendance for the active event.";
 
-    }
-
-    else {
+    } else {
 
       tip.innerHTML =
         "⚠️ <strong>Event Check-In Disabled</strong>" +
         "<br>" +
-        "Correct the active event in the Events sheet first.";
+        "Use Event Setup to select an active event.";
     }
 
+
+    return;
   }
 
-  else {
+
+  if (
+    currentMode ===
+      "REWARD_LOOKUP"
+  ) {
 
     tip.innerHTML =
       "🎁 <strong>Reward Redemption Mode</strong>" +
       "<br>" +
       "Scanning looks up rewards only. It does NOT record attendance.";
+
+    return;
   }
+
+
+  tip.innerHTML =
+    "⚙️ <strong>Event Setup Mode</strong>" +
+    "<br>" +
+    "Choose which sporting event should receive student check-ins.";
 }
 
 
@@ -967,9 +1098,10 @@ function updateTip() {
  *************************************************/
 
 async function sendToServer(
-  studentId,
-  action,
-  rewardLevel = ""
+  studentId = "",
+  action = "",
+  rewardLevel = "",
+  eventId = ""
 ) {
 
   const pin =
@@ -992,10 +1124,8 @@ async function sendToServer(
           "POST",
 
         headers: {
-
           "Content-Type":
             "text/plain;charset=utf-8"
-
         },
 
         body:
@@ -1011,7 +1141,10 @@ async function sendToServer(
               action,
 
             rewardLevel:
-              rewardLevel
+              rewardLevel,
+
+            eventId:
+              eventId
 
           }),
 
@@ -1033,13 +1166,411 @@ async function sendToServer(
       text
     );
 
-  }
-
-  catch (error) {
+  } catch (error) {
 
     throw new Error(
       "The rewards server returned an unexpected response."
     );
+  }
+}
+
+
+/*************************************************
+ * LOAD EVENT LIST
+ *************************************************/
+
+async function loadEvents() {
+
+  const section =
+    document.getElementById(
+      "eventSetupSection"
+    );
+
+
+  section.innerHTML =
+
+    "<div class='setup-header'>" +
+
+    "<div class='setup-header-title'>" +
+    "⚙️ Event Setup" +
+    "</div>" +
+
+    "<div class='setup-header-text'>" +
+    "Loading events..." +
+    "</div>" +
+
+    "</div>";
+
+
+  try {
+
+    const result =
+      await sendToServer(
+        "",
+        "GET_EVENTS"
+      );
+
+
+    if (
+      !result.success ||
+      result.type !==
+        "EVENT_LIST"
+    ) {
+
+      section.innerHTML =
+
+        "<div class='event-error'>" +
+
+        "<div class='event-error-title'>" +
+        "Unable to Load Events" +
+        "</div>" +
+
+        "<div class='event-error-message'>" +
+        escapeHtml(
+          result.message ||
+          "Unknown error."
+        ) +
+        "</div>" +
+
+        "</div>";
+
+
+      return;
+    }
+
+
+    displayEventList(
+      result
+    );
+
+
+  } catch (error) {
+
+    section.innerHTML =
+
+      "<div class='event-error'>" +
+
+      "<div class='event-error-title'>" +
+      "Unable to Load Events" +
+      "</div>" +
+
+      "<div class='event-error-message'>" +
+      escapeHtml(
+        error.message ||
+        String(error)
+      ) +
+      "</div>" +
+
+      "</div>";
+  }
+}
+
+
+/*************************************************
+ * DISPLAY EVENT LIST
+ *************************************************/
+
+function displayEventList(
+  result
+) {
+
+  const section =
+    document.getElementById(
+      "eventSetupSection"
+    );
+
+
+  let html =
+
+    "<div class='setup-header'>" +
+
+    "<div class='setup-header-title'>" +
+    "⚙️ Event Setup" +
+    "</div>" +
+
+    "<div class='setup-header-text'>" +
+    "Select the event that should receive student attendance. " +
+    "Only one event can be active at a time." +
+    "</div>" +
+
+    "</div>";
+
+
+  const events =
+    result.events || [];
+
+
+  if (
+    events.length === 0
+  ) {
+
+    html +=
+
+      "<div class='event-error'>" +
+
+      "<div class='event-error-title'>" +
+      "No Events Found" +
+      "</div>" +
+
+      "<div class='event-error-message'>" +
+      "Add events to the Events sheet first." +
+      "</div>" +
+
+      "</div>";
+
+
+    section.innerHTML =
+      html;
+
+
+    return;
+  }
+
+
+  events.forEach(
+    function(event) {
+
+      html +=
+
+        "<div class='event-option " +
+
+        (
+          event.active
+            ? "current"
+            : ""
+        ) +
+
+        "'>" +
+
+        "<div class='event-option-name'>" +
+        escapeHtml(
+          event.displayName
+        ) +
+        "</div>" +
+
+        "<div class='event-option-date'>" +
+        escapeHtml(
+          event.date
+        ) +
+        "</div>" +
+
+        "<div class='event-option-id'>" +
+        "Event ID: " +
+        escapeHtml(
+          event.eventId
+        ) +
+        "</div>";
+
+
+      if (
+        event.active
+      ) {
+
+        html +=
+
+          "<div class='current-badge'>" +
+          "✓ CURRENT ACTIVE EVENT" +
+          "</div>";
+
+      } else {
+
+        html +=
+
+          "<button " +
+          "class='activate-button' " +
+          "onclick='confirmEventChange(" +
+
+          JSON.stringify(
+            event.eventId
+          ) +
+
+          "," +
+
+          JSON.stringify(
+            event.displayName
+          ) +
+
+          ")'>" +
+
+          "MAKE ACTIVE" +
+
+          "</button>";
+      }
+
+
+      html +=
+        "</div>";
+    }
+  );
+
+
+  html +=
+
+    "<button " +
+    "class='refresh-button' " +
+    "onclick='loadEvents()'>" +
+    "↻ REFRESH EVENT LIST" +
+    "</button>";
+
+
+  section.innerHTML =
+    html;
+}
+
+
+/*************************************************
+ * CONFIRM EVENT CHANGE
+ *************************************************/
+
+function confirmEventChange(
+  eventId,
+  eventName
+) {
+
+  const confirmed =
+    window.confirm(
+
+      "Make this the active event?\n\n" +
+
+      eventName +
+
+      "\n\nStudent check-ins will be recorded to this event."
+
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  activateEvent(
+    eventId
+  );
+}
+
+
+/*************************************************
+ * ACTIVATE EVENT
+ *************************************************/
+
+async function activateEvent(
+  eventId
+) {
+
+  const section =
+    document.getElementById(
+      "eventSetupSection"
+    );
+
+
+  section.innerHTML =
+
+    "<div class='setup-header'>" +
+
+    "<div class='setup-header-title'>" +
+    "⚙️ Updating Active Event..." +
+    "</div>" +
+
+    "<div class='setup-header-text'>" +
+    "Please wait." +
+    "</div>" +
+
+    "</div>";
+
+
+  try {
+
+    const result =
+      await sendToServer(
+        "",
+        "SET_ACTIVE_EVENT",
+        "",
+        eventId
+      );
+
+
+    if (
+      !result.success ||
+      result.type !==
+        "ACTIVE_EVENT_CHANGED"
+    ) {
+
+      showStatus(
+        "<strong>Unable to Change Event</strong>" +
+        "<br><br>" +
+        escapeHtml(
+          result.message ||
+          "Unknown error."
+        ),
+        "error"
+      );
+
+
+      await loadEvents();
+
+      return;
+    }
+
+
+    /*********************************************
+     * UPDATE TOP ACTIVE EVENT DISPLAY
+     *********************************************/
+
+    displayActiveEvent(
+      result.activeEvent
+    );
+
+
+    /*********************************************
+     * RE-ENABLE CHECK-IN MODE
+     *********************************************/
+
+    document
+      .getElementById(
+        "checkinModeButton"
+      )
+      .disabled =
+        false;
+
+
+    showStatus(
+      "✅ <strong>ACTIVE EVENT CHANGED</strong>" +
+      "<br><br>" +
+      escapeHtml(
+        result.activeEvent.displayName
+      ) +
+      "<br>" +
+      escapeHtml(
+        result.activeEvent.date
+      ) +
+      "<br><br>" +
+      "Student check-ins will now be recorded to this event.",
+      "success"
+    );
+
+
+    /*********************************************
+     * REFRESH EVENT LIST
+     *********************************************/
+
+    await loadEvents();
+
+
+  } catch (error) {
+
+    showStatus(
+      "<strong>Event Setup Error</strong>" +
+      "<br><br>" +
+      escapeHtml(
+        error.message ||
+        String(error)
+      ),
+      "error"
+    );
+
+
+    await loadEvents();
   }
 }
 
@@ -1063,10 +1594,6 @@ function startScanner() {
   }
 
 
-  /*
-   * Double safety check.
-   */
-
   if (
     currentMode ===
       "CHECK_IN" &&
@@ -1087,7 +1614,6 @@ function startScanner() {
       "scanButton"
     );
 
-
   const container =
     document.getElementById(
       "scanner-container"
@@ -1096,12 +1622,10 @@ function startScanner() {
 
   scanLocked = false;
 
-
   button.disabled = true;
 
   button.innerHTML =
     "STARTING CAMERA...";
-
 
   container.style.display =
     "block";
@@ -1115,7 +1639,7 @@ function startScanner() {
 
   if (
     typeof Quagga ===
-    "undefined"
+      "undefined"
   ) {
 
     showStatus(
@@ -1123,10 +1647,8 @@ function startScanner() {
       "error"
     );
 
-
     button.disabled =
       false;
-
 
     resetScanButton();
 
@@ -1253,7 +1775,6 @@ function startScanner() {
 
     Quagga.start();
 
-
     scannerRunning =
       true;
 
@@ -1277,7 +1798,6 @@ function startScanner() {
 Quagga.onDetected(
   async function(data) {
 
-
     if (scanLocked) {
       return;
     }
@@ -1298,24 +1818,17 @@ Quagga.onDetected(
       ).trim();
 
 
-    /*
-     * NCISD student IDs used by this
-     * scanner are six digits.
-     */
-
     if (
       !/^\d{6}$/.test(
         code
       )
     ) {
-
       return;
     }
 
 
     scanLocked =
       true;
-
 
     currentStudentId =
       code;
@@ -1326,7 +1839,7 @@ Quagga.onDetected(
 
     if (
       currentMode ===
-      "CHECK_IN"
+        "CHECK_IN"
     ) {
 
       showStatus(
@@ -1337,9 +1850,7 @@ Quagga.onDetected(
         "info"
       );
 
-    }
-
-    else {
+    } else {
 
       showStatus(
         "🎁 Badge read: <strong>" +
@@ -1362,25 +1873,22 @@ Quagga.onDetected(
 
       if (
         currentMode ===
-        "CHECK_IN"
+          "CHECK_IN"
       ) {
 
         displayCheckInResult(
           result
         );
 
-      }
-
-      else {
+      } else {
 
         displayRewardLookup(
           result
         );
       }
 
-    }
 
-    catch (error) {
+    } catch (error) {
 
       showStatus(
         "<strong>System Error</strong><br><br>" +
@@ -1391,14 +1899,6 @@ Quagga.onDetected(
         "error"
       );
     }
-
-
-    document
-      .getElementById(
-        "scanButton"
-      )
-      .disabled =
-        false;
 
 
     resetScanButton();
@@ -1425,11 +1925,9 @@ function displayCheckInResult(
       "✅ <strong>CHECKED IN!</strong>" +
 
       "<div class='student-name'>" +
-
       escapeHtml(
         result.studentName
       ) +
-
       "</div>" +
 
       "<div class='events-label'>" +
@@ -1437,19 +1935,15 @@ function displayCheckInResult(
       "</div>" +
 
       "<div class='event-count'>" +
-
       escapeHtml(
         result.totalEvents
       ) +
-
       "</div>" +
 
       "<div class='event-name'>" +
-
       escapeHtml(
         result.event
       ) +
-
       "</div>";
 
 
@@ -1463,7 +1957,6 @@ function displayCheckInResult(
       html,
       "success"
     );
-
 
     return;
   }
@@ -1479,12 +1972,10 @@ function displayCheckInResult(
       "⚠️ <strong>ALREADY CHECKED IN</strong>" +
 
       "<div class='student-name'>" +
-
       escapeHtml(
         result.studentName ||
         ""
       ) +
-
       "</div>" +
 
       "<br>" +
@@ -1506,15 +1997,9 @@ function displayCheckInResult(
       "warning"
     );
 
-
     return;
   }
 
-
-  /*
-   * If backend catches an event problem,
-   * stop additional check-ins.
-   */
 
   if (
     result.type ===
@@ -1525,14 +2010,6 @@ function displayCheckInResult(
 
     activeEventReady =
       false;
-
-
-    document
-      .getElementById(
-        "scanButton"
-      )
-      .disabled =
-        true;
 
 
     document
@@ -1580,7 +2057,6 @@ function displayRewardLookup(
       "error"
     );
 
-
     return;
   }
 
@@ -1590,11 +2066,9 @@ function displayRewardLookup(
     "🎁 <strong>REWARD REDEMPTION</strong>" +
 
     "<div class='student-name'>" +
-
     escapeHtml(
       result.studentName
     ) +
-
     "</div>" +
 
     "<div class='events-label'>" +
@@ -1602,16 +2076,13 @@ function displayRewardLookup(
     "</div>" +
 
     "<div class='event-count'>" +
-
     escapeHtml(
       result.totalEvents
     ) +
-
     "</div>";
 
 
   const available =
-
     result.rewards &&
     result.rewards.availableRewards
 
@@ -1652,7 +2123,6 @@ function displayRewardLookup(
       "reward-status"
     );
 
-
     return;
   }
 
@@ -1669,33 +2139,24 @@ function displayRewardLookup(
         "</div>" +
 
         "<div class='reward-name'>" +
-
         escapeHtml(
           reward.reward
         ) +
-
         "</div>" +
 
         "<div>" +
-
         escapeHtml(
           reward.level
         ) +
-
         " • " +
-
         escapeHtml(
           reward.eventsRequired
         ) +
-
         " Events" +
-
         "</div>" +
 
         "<button " +
-
         "class='redeem-button' " +
-
         "onclick='confirmRedemption(" +
 
         JSON.stringify(
@@ -1825,21 +2286,16 @@ async function redeemReward(
         "</div>" +
 
         "<div class='student-name'>" +
-
         escapeHtml(
           result.studentName
         ) +
-
         "</div>" +
 
         "<div class='reward-name'>" +
-
         "🎁 " +
-
         escapeHtml(
           result.reward
         ) +
-
         "</div>" +
 
         "<div>" +
@@ -1915,9 +2371,8 @@ async function redeemReward(
       "error"
     );
 
-  }
 
-  catch (error) {
+  } catch (error) {
 
     showStatus(
       "<strong>Redemption Error</strong>" +
@@ -1963,27 +2418,20 @@ function buildRewardDisplay(
       "</div>" +
 
       "<div class='reward-name'>" +
-
       escapeHtml(
         rewards.justUnlocked.reward
       ) +
-
       "</div>" +
 
       "<div>" +
-
       escapeHtml(
         rewards.justUnlocked.level
       ) +
-
       " • " +
-
       escapeHtml(
         rewards.justUnlocked.eventsRequired
       ) +
-
       " Events" +
-
       "</div>" +
 
       "<div class='reward-progress'>" +
@@ -2032,10 +2480,8 @@ function buildRewardDisplay(
       buildNextReward(
         rewards.nextReward
       );
-  }
 
-
-  else if (
+  } else if (
     rewards.allRewardsEarned
   ) {
 
@@ -2076,27 +2522,20 @@ function buildNextReward(
     "</div>" +
 
     "<div class='reward-name'>" +
-
     escapeHtml(
       reward.reward
     ) +
-
     "</div>" +
 
     "<div>" +
-
     escapeHtml(
       reward.level
     ) +
-
     " • " +
-
     escapeHtml(
       reward.eventsRequired
     ) +
-
     " Events" +
-
     "</div>" +
 
     "<div class='reward-progress'>" +
@@ -2138,21 +2577,27 @@ function resetScanButton() {
       "CHECK_IN"
   ) {
 
+    button.style.display =
+      "block";
+
     button.innerHTML =
       "📷 SCAN NEXT STUDENT";
-
 
     button.disabled =
       !connectionVerified ||
       !activeEventReady;
 
-  }
 
-  else {
+  } else if (
+    currentMode ===
+      "REWARD_LOOKUP"
+  ) {
+
+    button.style.display =
+      "block";
 
     button.innerHTML =
       "🎁 SCAN BADGE FOR REWARDS";
-
 
     button.disabled =
       !connectionVerified;
@@ -2221,10 +2666,8 @@ function clearStatus() {
   status.className =
     "";
 
-
   status.innerHTML =
     "";
-
 
   status.style.display =
     "none";
