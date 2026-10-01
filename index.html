@@ -11,7 +11,6 @@
 
   <title>Student Rewards Scanner</title>
 
-  <!-- Quagga2 Barcode Scanner -->
   <script
     src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js">
   </script>
@@ -47,7 +46,7 @@
 
     .subtitle {
       color: #666;
-      margin: 8px 0 25px;
+      margin: 8px 0 22px;
       font-size: 17px;
     }
 
@@ -96,10 +95,54 @@
       color: white;
     }
 
+    /* MODE */
+
+    #modeSection {
+      display: none;
+      margin-top: 20px;
+    }
+
+    .mode-title {
+      font-size: 15px;
+      font-weight: bold;
+      color: #555;
+      margin-bottom: 10px;
+    }
+
+    .mode-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .mode-button {
+      background: #e8eaed;
+      color: #333;
+      padding: 15px 8px;
+      font-size: 16px;
+    }
+
+    .mode-button.active-checkin {
+      background: #188038;
+      color: white;
+    }
+
+    .mode-button.active-reward {
+      background: #9334e6;
+      color: white;
+    }
+
+    /* SCAN */
+
     .scan-button {
+      margin-top: 16px;
       background: #188038;
       color: white;
       font-size: 20px;
+    }
+
+    .scan-button.reward-mode {
+      background: #9334e6;
     }
 
     /* CAMERA */
@@ -127,9 +170,9 @@
     }
 
     /*
-      Keep this wide and shallow.
-      This is the configuration that works
-      well with the Code 39 student badges.
+      IMPORTANT:
+      This is the working Code 39
+      scanning guide.
     */
 
     .scan-guide {
@@ -188,6 +231,12 @@
       border: 2px solid #d93025;
     }
 
+    .reward-status {
+      display: block !important;
+      background: #f3e8fd;
+      border: 2px solid #9334e6;
+    }
+
     .student-name {
       font-size: 27px;
       font-weight: bold;
@@ -211,7 +260,7 @@
       margin-bottom: 15px;
     }
 
-    /* REWARDS */
+    /* REWARD DISPLAY */
 
     .reward-card {
       background: white;
@@ -260,9 +309,33 @@
       margin-top: 14px;
     }
 
-    .available-title {
+    /* REDEMPTION */
+
+    .redeem-card {
+      background: white;
+      border: 3px solid #9334e6;
+      border-radius: 14px;
+      padding: 18px;
+      margin-top: 16px;
+    }
+
+    .redeem-button {
+      margin-top: 14px;
+      background: #9334e6;
+      color: white;
+    }
+
+    .redeemed-box {
+      background: #e6f4ea;
+      border: 3px solid #34a853;
+      border-radius: 14px;
+      padding: 18px;
+      margin-top: 16px;
+    }
+
+    .redeemed-title {
+      font-size: 23px;
       font-weight: bold;
-      color: #681da8;
     }
 
     .tip {
@@ -283,11 +356,11 @@
   <h1>🏆 Student Rewards</h1>
 
   <div class="subtitle">
-    Sporting Event Check-In
+    Sporting Event Rewards Program
   </div>
 
 
-  <!-- STAFF PIN -->
+  <!-- PIN -->
 
   <div class="pin-section">
 
@@ -314,7 +387,36 @@
   </div>
 
 
-  <!-- SCAN BUTTON -->
+  <!-- MODE -->
+
+  <div id="modeSection">
+
+    <div class="mode-title">
+      SELECT MODE
+    </div>
+
+    <div class="mode-buttons">
+
+      <button
+        id="checkinModeButton"
+        class="mode-button active-checkin"
+        onclick="setMode('CHECK_IN')">
+        🏟️ EVENT<br>CHECK-IN
+      </button>
+
+      <button
+        id="rewardModeButton"
+        class="mode-button"
+        onclick="setMode('REWARD_LOOKUP')">
+        🎁 REDEEM<br>REWARD
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- SCAN -->
 
   <button
     id="scanButton"
@@ -339,12 +441,13 @@
   </div>
 
 
+  <!-- RESULTS -->
+
   <div id="status"></div>
 
 
-  <div class="tip">
-    Hold the badge horizontally.<br>
-    Place the entire barcode inside the white rectangle.
+  <div class="tip" id="tip">
+    Connect the scanner to begin.
   </div>
 
 </div>
@@ -366,9 +469,13 @@ let scanLocked = false;
 
 let connectionVerified = false;
 
+let currentMode = "CHECK_IN";
+
+let currentStudentId = null;
+
 
 /*************************************************
- * TEST CONNECTION
+ * CONNECTION TEST
  *************************************************/
 
 async function testConnection() {
@@ -392,15 +499,12 @@ async function testConnection() {
 
 
   const button =
-    document.getElementById(
-      "testButton"
-    );
+    document.getElementById("testButton");
 
 
   button.disabled = true;
 
-  button.innerHTML =
-    "TESTING...";
+  button.innerHTML = "TESTING...";
 
 
   showStatus(
@@ -414,36 +518,37 @@ async function testConnection() {
     const result =
       await sendToServer(
         "__TEST__",
-        pin
+        "CHECK_IN"
       );
 
 
     if (
       result.success &&
-      result.type ===
-        "CONNECTION_TEST"
+      result.type === "CONNECTION_TEST"
     ) {
 
       connectionVerified = true;
 
+      document.getElementById(
+        "scanButton"
+      ).disabled = false;
 
-      document
-        .getElementById(
-          "scanButton"
-        )
-        .disabled = false;
-
+      document.getElementById(
+        "modeSection"
+      ).style.display = "block";
 
       button.innerHTML =
         "✓ CONNECTED";
 
 
       showStatus(
-        "✅ <strong>CONNECTED!</strong>" +
-        "<br><br>" +
-        "Ready to scan student badges.",
+        "✅ <strong>CONNECTED!</strong><br><br>" +
+        "Choose a mode and scan a student badge.",
         "success"
       );
+
+
+      updateTip();
 
     }
 
@@ -479,8 +584,7 @@ async function testConnection() {
 
 
     showStatus(
-      "<strong>Connection Error</strong>" +
-      "<br><br>" +
+      "<strong>Connection Error</strong><br><br>" +
       escapeHtml(
         error.message ||
         String(error)
@@ -492,13 +596,124 @@ async function testConnection() {
 
 
 /*************************************************
+ * MODE
+ *************************************************/
+
+function setMode(mode) {
+
+  currentMode = mode;
+
+  currentStudentId = null;
+
+
+  const checkinButton =
+    document.getElementById(
+      "checkinModeButton"
+    );
+
+  const rewardButton =
+    document.getElementById(
+      "rewardModeButton"
+    );
+
+  const scanButton =
+    document.getElementById(
+      "scanButton"
+    );
+
+
+  if (
+    mode === "CHECK_IN"
+  ) {
+
+    checkinButton.className =
+      "mode-button active-checkin";
+
+    rewardButton.className =
+      "mode-button";
+
+    scanButton.className =
+      "scan-button";
+
+    scanButton.innerHTML =
+      "📷 SCAN STUDENT BADGE";
+
+  }
+
+  else {
+
+    checkinButton.className =
+      "mode-button";
+
+    rewardButton.className =
+      "mode-button active-reward";
+
+    scanButton.className =
+      "scan-button reward-mode";
+
+    scanButton.innerHTML =
+      "🎁 SCAN BADGE FOR REWARDS";
+
+  }
+
+
+  scanButton.disabled =
+    !connectionVerified;
+
+
+  clearStatus();
+
+  updateTip();
+}
+
+
+/*************************************************
+ * TIP
+ *************************************************/
+
+function updateTip() {
+
+  const tip =
+    document.getElementById("tip");
+
+
+  if (
+    currentMode === "CHECK_IN"
+  ) {
+
+    tip.innerHTML =
+      "🏟️ <strong>Event Check-In Mode</strong>" +
+      "<br>" +
+      "Scanning records attendance for the active event.";
+
+  }
+
+  else {
+
+    tip.innerHTML =
+      "🎁 <strong>Reward Redemption Mode</strong>" +
+      "<br>" +
+      "Scanning only looks up rewards. It does NOT record attendance.";
+  }
+}
+
+
+/*************************************************
  * SEND TO APPS SCRIPT
  *************************************************/
 
 async function sendToServer(
   studentId,
-  pin
+  action,
+  rewardLevel = ""
 ) {
+
+  const pin =
+    document
+      .getElementById("pin")
+      .value
+      .trim();
+
 
   const response =
     await fetch(
@@ -507,14 +722,11 @@ async function sendToServer(
 
       {
 
-        method:
-          "POST",
+        method: "POST",
 
         headers: {
-
           "Content-Type":
             "text/plain;charset=utf-8"
-
         },
 
         body:
@@ -524,7 +736,13 @@ async function sendToServer(
               studentId,
 
             pin:
-              pin
+              pin,
+
+            action:
+              action,
+
+            rewardLevel:
+              rewardLevel
 
           }),
 
@@ -549,7 +767,7 @@ async function sendToServer(
   catch (error) {
 
     throw new Error(
-      "The attendance server returned an unexpected response."
+      "The rewards server returned an unexpected response."
     );
   }
 }
@@ -604,8 +822,7 @@ function startScanner() {
 
 
   if (
-    typeof Quagga ===
-    "undefined"
+    typeof Quagga === "undefined"
   ) {
 
     showStatus(
@@ -615,18 +832,16 @@ function startScanner() {
 
     button.disabled = false;
 
-    button.innerHTML =
-      "📷 SCAN STUDENT BADGE";
+    resetScanButton();
 
     return;
   }
 
 
   /*************************************************
-   * QUAGGA
+   * WORKING CODE 39 CONFIGURATION
    *
-   * KEEP THIS SCANNER CONFIGURATION.
-   * It is tuned for the Code 39 badges.
+   * DO NOT CHANGE.
    *************************************************/
 
   Quagga.init({
@@ -717,10 +932,8 @@ function startScanner() {
 
       console.error(error);
 
-
       showStatus(
-        "<strong>Scanner Error</strong>" +
-        "<br><br>" +
+        "<strong>Scanner Error</strong><br><br>" +
         escapeHtml(
           error.message ||
           String(error)
@@ -728,11 +941,9 @@ function startScanner() {
         "error"
       );
 
-
       button.disabled = false;
 
-      button.innerHTML =
-        "📷 SCAN STUDENT BADGE";
+      resetScanButton();
 
       return;
     }
@@ -783,10 +994,6 @@ Quagga.onDetected(
       ).trim();
 
 
-    /*
-     * Student IDs are six digits.
-     */
-
     if (
       !/^\d{6}$/.test(code)
     ) {
@@ -796,25 +1003,36 @@ Quagga.onDetected(
 
     scanLocked = true;
 
+    currentStudentId = code;
+
 
     stopScanner();
 
 
-    showStatus(
-      "✅ Badge read: <strong>" +
-      escapeHtml(code) +
-      "</strong>" +
-      "<br><br>" +
-      "Recording attendance...",
-      "info"
-    );
+    if (
+      currentMode === "CHECK_IN"
+    ) {
 
+      showStatus(
+        "✅ Badge read: <strong>" +
+        escapeHtml(code) +
+        "</strong><br><br>" +
+        "Recording attendance...",
+        "info"
+      );
 
-    const pin =
-      document
-        .getElementById("pin")
-        .value
-        .trim();
+    }
+
+    else {
+
+      showStatus(
+        "🎁 Badge read: <strong>" +
+        escapeHtml(code) +
+        "</strong><br><br>" +
+        "Looking up rewards...",
+        "info"
+      );
+    }
 
 
     try {
@@ -822,21 +1040,33 @@ Quagga.onDetected(
       const result =
         await sendToServer(
           code,
-          pin
+          currentMode
         );
 
 
-      displayCheckInResult(
-        result
-      );
+      if (
+        currentMode === "CHECK_IN"
+      ) {
+
+        displayCheckInResult(
+          result
+        );
+
+      }
+
+      else {
+
+        displayRewardLookup(
+          result
+        );
+      }
 
     }
 
     catch (error) {
 
       showStatus(
-        "<strong>Attendance Error</strong>" +
-        "<br><br>" +
+        "<strong>System Error</strong><br><br>" +
         escapeHtml(
           error.message ||
           String(error)
@@ -854,29 +1084,22 @@ Quagga.onDetected(
 
     button.disabled = false;
 
-    button.innerHTML =
-      "📷 SCAN NEXT STUDENT";
+    resetScanButton();
   }
 );
 
 
 /*************************************************
- * DISPLAY CHECK-IN RESULT
+ * CHECK-IN RESULT
  *************************************************/
 
 function displayCheckInResult(
   result
 ) {
 
-
-  /*
-   * SUCCESS
-   */
-
   if (
     result.success &&
-    result.type ===
-      "CHECKED_IN"
+    result.type === "CHECKED_IN"
   ) {
 
     let html =
@@ -884,11 +1107,9 @@ function displayCheckInResult(
       "✅ <strong>CHECKED IN!</strong>" +
 
       "<div class='student-name'>" +
-
       escapeHtml(
         result.studentName
       ) +
-
       "</div>" +
 
       "<div class='events-label'>" +
@@ -896,19 +1117,15 @@ function displayCheckInResult(
       "</div>" +
 
       "<div class='event-count'>" +
-
       escapeHtml(
         result.totalEvents
       ) +
-
       "</div>" +
 
       "<div class='event-name'>" +
-
       escapeHtml(
         result.event
       ) +
-
       "</div>";
 
 
@@ -923,18 +1140,12 @@ function displayCheckInResult(
       "success"
     );
 
-
     return;
   }
 
 
-  /*
-   * DUPLICATE
-   */
-
   if (
-    result.type ===
-      "DUPLICATE"
+    result.type === "DUPLICATE"
   ) {
 
     let html =
@@ -942,26 +1153,17 @@ function displayCheckInResult(
       "⚠️ <strong>ALREADY CHECKED IN</strong>" +
 
       "<div class='student-name'>" +
-
       escapeHtml(
-        result.studentName ||
-        ""
+        result.studentName || ""
       ) +
-
       "</div>" +
 
       "<br>" +
 
       escapeHtml(
-        result.message ||
-        ""
+        result.message || ""
       );
 
-
-    /*
-     * Still show reward progress
-     * when a duplicate badge is scanned.
-     */
 
     html +=
       buildRewardDisplay(
@@ -974,14 +1176,9 @@ function displayCheckInResult(
       "warning"
     );
 
-
     return;
   }
 
-
-  /*
-   * OTHER ERROR
-   */
 
   showStatus(
     "<strong>Unable to Check In</strong>" +
@@ -996,7 +1193,331 @@ function displayCheckInResult(
 
 
 /*************************************************
- * BUILD REWARD DISPLAY
+ * REWARD LOOKUP RESULT
+ *************************************************/
+
+function displayRewardLookup(
+  result
+) {
+
+  if (
+    !result.success ||
+    result.type !== "REWARD_LOOKUP"
+  ) {
+
+    showStatus(
+      "<strong>Unable to Find Rewards</strong>" +
+      "<br><br>" +
+      escapeHtml(
+        result.message ||
+        "Unknown error."
+      ),
+      "error"
+    );
+
+    return;
+  }
+
+
+  let html =
+
+    "🎁 <strong>REWARD REDEMPTION</strong>" +
+
+    "<div class='student-name'>" +
+    escapeHtml(
+      result.studentName
+    ) +
+    "</div>" +
+
+    "<div class='events-label'>" +
+    "EVENTS ATTENDED" +
+    "</div>" +
+
+    "<div class='event-count'>" +
+    escapeHtml(
+      result.totalEvents
+    ) +
+    "</div>";
+
+
+  const available =
+    result.rewards &&
+    result.rewards.availableRewards
+      ? result.rewards.availableRewards
+      : [];
+
+
+  if (
+    available.length === 0
+  ) {
+
+    html +=
+
+      "<div class='available-card'>" +
+
+      "<strong>No rewards currently available to redeem.</strong>" +
+
+      "</div>";
+
+
+    if (
+      result.rewards &&
+      result.rewards.nextReward
+    ) {
+
+      html +=
+        buildNextReward(
+          result.rewards.nextReward
+        );
+    }
+
+
+    showStatus(
+      html,
+      "reward-status"
+    );
+
+    return;
+  }
+
+
+  available.forEach(
+    function(reward) {
+
+      html +=
+
+        "<div class='redeem-card'>" +
+
+        "<div class='reward-heading'>" +
+        "AVAILABLE REWARD" +
+        "</div>" +
+
+        "<div class='reward-name'>" +
+        escapeHtml(
+          reward.reward
+        ) +
+        "</div>" +
+
+        "<div>" +
+        escapeHtml(
+          reward.level
+        ) +
+        " • " +
+        escapeHtml(
+          reward.eventsRequired
+        ) +
+        " Events" +
+        "</div>" +
+
+        "<button " +
+        "class='redeem-button' " +
+        "onclick='confirmRedemption(" +
+        JSON.stringify(
+          reward.level
+        ) +
+        "," +
+        JSON.stringify(
+          reward.reward
+        ) +
+        ")'>" +
+        "🎁 REDEEM REWARD" +
+        "</button>" +
+
+        "</div>";
+    }
+  );
+
+
+  if (
+    result.rewards.nextReward
+  ) {
+
+    html +=
+      buildNextReward(
+        result.rewards.nextReward
+      );
+  }
+
+
+  showStatus(
+    html,
+    "reward-status"
+  );
+}
+
+
+/*************************************************
+ * CONFIRM REDEMPTION
+ *************************************************/
+
+function confirmRedemption(
+  rewardLevel,
+  rewardName
+) {
+
+  const confirmed =
+    window.confirm(
+      "Redeem this reward?\n\n" +
+      rewardName +
+      "\n\n" +
+      "Only confirm after the reward has been given to the student."
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  redeemReward(
+    rewardLevel
+  );
+}
+
+
+/*************************************************
+ * REDEEM
+ *************************************************/
+
+async function redeemReward(
+  rewardLevel
+) {
+
+  if (!currentStudentId) {
+
+    showStatus(
+      "Please scan the student's badge again.",
+      "error"
+    );
+
+    return;
+  }
+
+
+  showStatus(
+    "🎁 Recording reward redemption...",
+    "info"
+  );
+
+
+  try {
+
+    const result =
+      await sendToServer(
+        currentStudentId,
+        "REDEEM_REWARD",
+        rewardLevel
+      );
+
+
+    if (
+      result.success &&
+      result.type === "REWARD_REDEEMED"
+    ) {
+
+      let html =
+
+        "<div class='redeemed-box'>" +
+
+        "<div class='redeemed-title'>" +
+        "✅ REWARD REDEEMED!" +
+        "</div>" +
+
+        "<div class='student-name'>" +
+        escapeHtml(
+          result.studentName
+        ) +
+        "</div>" +
+
+        "<div class='reward-name'>" +
+        "🎁 " +
+        escapeHtml(
+          result.reward
+        ) +
+        "</div>" +
+
+        "<div>" +
+        "Redemption recorded successfully." +
+        "</div>" +
+
+        "</div>";
+
+
+      if (
+        result.rewards &&
+        result.rewards.nextReward
+      ) {
+
+        html +=
+          buildNextReward(
+            result.rewards.nextReward
+          );
+      }
+
+
+      showStatus(
+        html,
+        "success"
+      );
+
+
+      currentStudentId = null;
+
+      return;
+    }
+
+
+    if (
+      result.type ===
+      "ALREADY_REDEEMED"
+    ) {
+
+      showStatus(
+        "⚠️ <strong>ALREADY REDEEMED</strong>" +
+        "<br><br>" +
+        escapeHtml(
+          result.reward || ""
+        ) +
+        "<br>" +
+        escapeHtml(
+          result.message || ""
+        ),
+        "warning"
+      );
+
+      return;
+    }
+
+
+    showStatus(
+      "<strong>Unable to Redeem Reward</strong>" +
+      "<br><br>" +
+      escapeHtml(
+        result.message ||
+        "Unknown error."
+      ),
+      "error"
+    );
+
+  }
+
+  catch (error) {
+
+    showStatus(
+      "<strong>Redemption Error</strong>" +
+      "<br><br>" +
+      escapeHtml(
+        error.message ||
+        String(error)
+      ),
+      "error"
+    );
+  }
+}
+
+
+/*************************************************
+ * REWARD PROGRESS FOR CHECK-IN
  *************************************************/
 
 function buildRewardDisplay(
@@ -1010,10 +1531,6 @@ function buildRewardDisplay(
 
   let html = "";
 
-
-  /*************************************************
-   * JUST UNLOCKED
-   *************************************************/
 
   if (
     rewards.justUnlocked &&
@@ -1029,27 +1546,20 @@ function buildRewardDisplay(
       "</div>" +
 
       "<div class='reward-name'>" +
-
       escapeHtml(
         rewards.justUnlocked.reward
       ) +
-
       "</div>" +
 
       "<div>" +
-
       escapeHtml(
         rewards.justUnlocked.level
       ) +
-
       " • " +
-
       escapeHtml(
         rewards.justUnlocked.eventsRequired
       ) +
-
       " Events" +
-
       "</div>" +
 
       "<div class='reward-progress'>" +
@@ -1060,10 +1570,6 @@ function buildRewardDisplay(
   }
 
 
-  /*************************************************
-   * AVAILABLE REWARDS
-   *************************************************/
-
   if (
     rewards.availableCount > 0
   ) {
@@ -1072,9 +1578,7 @@ function buildRewardDisplay(
 
       "<div class='available-card'>" +
 
-      "<div class='available-title'>" +
-
-      "🎁 " +
+      "<strong>🎁 " +
 
       escapeHtml(
         rewards.availableCount
@@ -1086,81 +1590,26 @@ function buildRewardDisplay(
           : " Rewards Available"
       ) +
 
-      "</div>" +
+      "</strong>" +
 
-      "<div>" +
+      "<br>" +
+
       "Not yet redeemed" +
-      "</div>" +
 
       "</div>";
   }
 
-
-  /*************************************************
-   * NEXT REWARD
-   *************************************************/
 
   if (
     rewards.nextReward
   ) {
 
-    const remaining =
-      rewards
-        .nextReward
-        .eventsRemaining;
-
-
     html +=
-
-      "<div class='reward-card'>" +
-
-      "<div class='reward-heading'>" +
-      "🎁 NEXT REWARD" +
-      "</div>" +
-
-      "<div class='reward-name'>" +
-
-      escapeHtml(
-        rewards.nextReward.reward
-      ) +
-
-      "</div>" +
-
-      "<div>" +
-
-      escapeHtml(
-        rewards.nextReward.level
-      ) +
-
-      " • " +
-
-      escapeHtml(
-        rewards.nextReward.eventsRequired
-      ) +
-
-      " Events" +
-
-      "</div>" +
-
-      "<div class='reward-progress'>" +
-
-      (
-        remaining === 1
-          ? "<strong>1 more event to go!</strong>"
-          : "<strong>" +
-            escapeHtml(remaining) +
-            " more events to go!</strong>"
-      ) +
-
-      "</div>" +
-
-      "</div>";
+      buildNextReward(
+        rewards.nextReward
+      );
   }
 
-
-  /*************************************************
-   * ALL REWARD LEVELS EARNED
-   *************************************************/
 
   else if (
     rewards.allRewardsEarned
@@ -1174,15 +1623,95 @@ function buildRewardDisplay(
       "🏆 ALL REWARD LEVELS EARNED" +
       "</div>" +
 
-      "<div class='reward-progress'>" +
-      "Amazing attendance!" +
-      "</div>" +
-
       "</div>";
   }
 
 
   return html;
+}
+
+
+/*************************************************
+ * NEXT REWARD
+ *************************************************/
+
+function buildNextReward(
+  reward
+) {
+
+  const remaining =
+    reward.eventsRemaining;
+
+
+  return (
+
+    "<div class='reward-card'>" +
+
+    "<div class='reward-heading'>" +
+    "🎁 NEXT REWARD" +
+    "</div>" +
+
+    "<div class='reward-name'>" +
+    escapeHtml(
+      reward.reward
+    ) +
+    "</div>" +
+
+    "<div>" +
+    escapeHtml(
+      reward.level
+    ) +
+    " • " +
+    escapeHtml(
+      reward.eventsRequired
+    ) +
+    " Events" +
+    "</div>" +
+
+    "<div class='reward-progress'>" +
+
+    (
+      remaining === 1
+        ? "<strong>1 more event to go!</strong>"
+        : "<strong>" +
+          escapeHtml(remaining) +
+          " more events to go!</strong>"
+    ) +
+
+    "</div>" +
+
+    "</div>"
+
+  );
+}
+
+
+/*************************************************
+ * RESET SCAN BUTTON
+ *************************************************/
+
+function resetScanButton() {
+
+  const button =
+    document.getElementById(
+      "scanButton"
+    );
+
+
+  if (
+    currentMode === "CHECK_IN"
+  ) {
+
+    button.innerHTML =
+      "📷 SCAN NEXT STUDENT";
+
+  }
+
+  else {
+
+    button.innerHTML =
+      "🎁 SCAN BADGE FOR REWARDS";
+  }
 }
 
 
@@ -1204,8 +1733,7 @@ function stopScanner() {
     .getElementById(
       "scanner-container"
     )
-    .style.display =
-      "none";
+    .style.display = "none";
 }
 
 
@@ -1230,6 +1758,22 @@ function showStatus(
 
   status.innerHTML =
     message;
+}
+
+
+function clearStatus() {
+
+  const status =
+    document.getElementById(
+      "status"
+    );
+
+
+  status.className = "";
+
+  status.innerHTML = "";
+
+  status.style.display = "none";
 }
 
 
