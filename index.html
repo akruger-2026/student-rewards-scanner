@@ -11,7 +11,7 @@
 
   <title>Student Rewards Scanner</title>
 
-  <!-- Quagga2 Barcode Scanner -->
+  <!-- Quagga2 -->
   <script
     src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js">
   </script>
@@ -51,20 +51,53 @@
       font-size: 17px;
     }
 
+    .pin-section {
+      background: #f8f9fa;
+      padding: 18px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+
+    .pin-section label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    #pin {
+      width: 100%;
+      padding: 15px;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      font-size: 22px;
+      text-align: center;
+      letter-spacing: 3px;
+      margin-bottom: 12px;
+    }
+
     button {
       width: 100%;
-      padding: 18px;
+      padding: 17px;
       border: none;
       border-radius: 12px;
-      background: #188038;
-      color: white;
-      font-size: 20px;
+      font-size: 18px;
       font-weight: bold;
       cursor: pointer;
     }
 
+    .test-button {
+      background: #1a73e8;
+      color: white;
+    }
+
+    .scan-button {
+      background: #188038;
+      color: white;
+      font-size: 20px;
+    }
+
     button:disabled {
-      opacity: .6;
+      opacity: .55;
     }
 
     #scanner-container {
@@ -131,22 +164,33 @@
       border: 2px solid #34a853;
     }
 
+    .warning {
+      display: block !important;
+      background: #fef7e0;
+      border: 2px solid #f9ab00;
+    }
+
     .error {
       display: block !important;
       background: #fce8e6;
       border: 2px solid #d93025;
     }
 
-    .barcode {
-      font-size: 34px;
+    .student-name {
+      font-size: 27px;
       font-weight: bold;
-      margin-top: 12px;
-      word-break: break-all;
+      margin-top: 10px;
     }
 
-    .format {
-      margin-top: 8px;
-      color: #555;
+    .event-count {
+      font-size: 44px;
+      font-weight: bold;
+      margin: 8px 0;
+    }
+
+    .small {
+      color: #666;
+      font-size: 14px;
     }
 
     .tip {
@@ -171,10 +215,41 @@
   </div>
 
 
+  <!-- PIN -->
+
+  <div class="pin-section">
+
+    <label for="pin">
+      Staff Scanner PIN
+    </label>
+
+    <input
+      id="pin"
+      type="password"
+      inputmode="numeric"
+      autocomplete="off"
+      placeholder="Enter PIN"
+    >
+
+    <button
+      id="testButton"
+      class="test-button"
+      type="button"
+      onclick="testConnection()">
+      TEST CONNECTION
+    </button>
+
+  </div>
+
+
+  <!-- SCANNER -->
+
   <button
     id="scanButton"
+    class="scan-button"
     type="button"
-    onclick="startScanner()">
+    onclick="startScanner()"
+    disabled>
     📷 SCAN STUDENT BADGE
   </button>
 
@@ -194,8 +269,9 @@
 
 
   <div class="tip">
-    Hold the badge horizontally.<br>
-    Keep the entire barcode inside the white rectangle.
+    First, enter the staff PIN and test the connection.
+    <br><br>
+    Once connected, scan the barcode on the student's badge.
   </div>
 
 </div>
@@ -203,29 +279,244 @@
 
 <script>
 
+/*************************************************
+ * SETTINGS
+ *************************************************/
+
+const API_URL =
+  "https://script.google.com/macros/s/AKfycbwEz-Qr2m9_176d2xWeBSHmNnVKpAJCryw0D8Bsy9NY-kjC_O_RRNNwskb-cK8yOJ3tNw/exec";
+
+
 let scannerRunning = false;
+
 let scanLocked = false;
 
+let connectionVerified = false;
 
-/* --------------------------
-   START SCANNER
--------------------------- */
+
+/*************************************************
+ * TEST CONNECTION
+ *************************************************/
+
+async function testConnection() {
+
+  const pin =
+    document
+      .getElementById("pin")
+      .value
+      .trim();
+
+
+  if (!pin) {
+
+    showStatus(
+      "Please enter the Staff Scanner PIN.",
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  const button =
+    document.getElementById("testButton");
+
+
+  button.disabled = true;
+
+  button.innerHTML =
+    "TESTING...";
+
+
+  showStatus(
+    "Testing connection to the attendance system...",
+    "info"
+  );
+
+
+  try {
+
+    const result =
+      await sendToServer(
+        "__TEST__",
+        pin
+      );
+
+
+    if (
+      result.success &&
+      result.type ===
+        "CONNECTION_TEST"
+    ) {
+
+      connectionVerified = true;
+
+
+      document
+        .getElementById("scanButton")
+        .disabled = false;
+
+
+      button.innerHTML =
+        "✓ CONNECTED";
+
+
+      showStatus(
+        "✅ <strong>CONNECTED!</strong>" +
+        "<br><br>" +
+        "The scanner can communicate with the attendance system.",
+        "success"
+      );
+
+    }
+
+    else {
+
+      connectionVerified = false;
+
+      button.disabled = false;
+
+      button.innerHTML =
+        "TEST CONNECTION";
+
+
+      showStatus(
+        escapeHtml(
+          result.message ||
+          "Connection failed."
+        ),
+        "error"
+      );
+
+    }
+
+  }
+
+  catch (error) {
+
+    connectionVerified = false;
+
+    button.disabled = false;
+
+    button.innerHTML =
+      "TEST CONNECTION";
+
+
+    showStatus(
+      "<strong>Connection Error</strong>" +
+      "<br><br>" +
+      escapeHtml(
+        error.message ||
+        String(error)
+      ),
+      "error"
+    );
+
+  }
+
+}
+
+
+/*************************************************
+ * SEND REQUEST TO APPS SCRIPT
+ *************************************************/
+
+async function sendToServer(
+  studentId,
+  pin
+) {
+
+  const response =
+    await fetch(
+      API_URL,
+      {
+
+        method: "POST",
+
+        headers: {
+          "Content-Type":
+            "text/plain;charset=utf-8"
+        },
+
+        body:
+          JSON.stringify({
+
+            studentId:
+              studentId,
+
+            pin:
+              pin
+
+          }),
+
+        redirect:
+          "follow"
+
+      }
+    );
+
+
+  const text =
+    await response.text();
+
+
+  try {
+
+    return JSON.parse(text);
+
+  }
+
+  catch (error) {
+
+    throw new Error(
+      "The attendance server returned an unexpected response."
+    );
+
+  }
+
+}
+
+
+/*************************************************
+ * START SCANNER
+ *************************************************/
 
 function startScanner() {
+
+  if (!connectionVerified) {
+
+    showStatus(
+      "Please test the connection before scanning.",
+      "error"
+    );
+
+    return;
+
+  }
+
 
   const button =
     document.getElementById("scanButton");
 
+
   const container =
-    document.getElementById("scanner-container");
+    document.getElementById(
+      "scanner-container"
+    );
 
 
   scanLocked = false;
+
 
   button.disabled = true;
 
   button.innerHTML =
     "STARTING CAMERA...";
+
+
+  container.style.display =
+    "block";
 
 
   showStatus(
@@ -234,14 +525,13 @@ function startScanner() {
   );
 
 
-  container.style.display =
-    "block";
-
-
-  if (typeof Quagga === "undefined") {
+  if (
+    typeof Quagga ===
+    "undefined"
+  ) {
 
     showStatus(
-      "❌ Quagga barcode library did not load.",
+      "Quagga barcode library did not load.",
       "error"
     );
 
@@ -256,16 +546,21 @@ function startScanner() {
 
     inputStream: {
 
-      name: "Live",
+      name:
+        "Live",
 
-      type: "LiveStream",
+      type:
+        "LiveStream",
 
       target:
-        document.querySelector("#scanner"),
+        document.querySelector(
+          "#scanner"
+        ),
 
       constraints: {
 
-        facingMode: "environment",
+        facingMode:
+          "environment",
 
         width: {
           ideal: 1920
@@ -279,13 +574,17 @@ function startScanner() {
 
       area: {
 
-        top: "25%",
+        top:
+          "25%",
 
-        right: "5%",
+        right:
+          "5%",
 
-        left: "5%",
+        left:
+          "5%",
 
-        bottom: "25%"
+        bottom:
+          "25%"
 
       }
 
@@ -294,59 +593,53 @@ function startScanner() {
 
     locator: {
 
-      patchSize: "medium",
+      patchSize:
+        "medium",
 
-      halfSample: false
+      halfSample:
+        false
 
     },
 
 
-    locate: true,
+    locate:
+      true,
 
 
-    frequency: 10,
+    frequency:
+      10,
 
+
+    /*
+     * We now know the student badges
+     * use CODE 39.
+     *
+     * Limiting the scanner to Code 39
+     * should improve speed and reduce
+     * false reads.
+     */
 
     decoder: {
 
       readers: [
-
-        "code_128_reader",
-
-        "code_39_reader",
-
-        "code_93_reader",
-
-        "i2of5_reader",
-
-        "2of5_reader",
-
-        "codabar_reader",
-
-        "ean_reader",
-
-        "ean_8_reader",
-
-        "upc_reader",
-
-        "upc_e_reader"
-
+        "code_39_reader"
       ],
 
-      multiple: false
+      multiple:
+        false
 
     }
 
   },
 
+
   function(error) {
 
     if (error) {
 
-      console.error(error);
-
       showStatus(
-        "<strong>Scanner Error</strong><br><br>" +
+        "<strong>Scanner Error</strong>" +
+        "<br><br>" +
         escapeHtml(
           error.message ||
           String(error)
@@ -359,6 +652,7 @@ function startScanner() {
 
       button.innerHTML =
         "📷 SCAN STUDENT BADGE";
+
 
       return;
 
@@ -375,7 +669,7 @@ function startScanner() {
 
 
     showStatus(
-      "Camera active. Place the barcode inside the white rectangle.",
+      "Camera active. Place the badge barcode inside the white rectangle.",
       "info"
     );
 
@@ -384,99 +678,216 @@ function startScanner() {
 }
 
 
-/* --------------------------
-   BARCODE DETECTED
--------------------------- */
+/*************************************************
+ * BARCODE DETECTED
+ *************************************************/
 
-Quagga.onDetected(function(data) {
+Quagga.onDetected(
+  async function(data) {
 
-  if (scanLocked) {
+    if (scanLocked) {
+      return;
+    }
+
+
+    if (
+      !data ||
+      !data.codeResult ||
+      !data.codeResult.code
+    ) {
+
+      return;
+
+    }
+
+
+    const code =
+      String(
+        data.codeResult.code
+      ).trim();
+
+
+    /*
+     * Your student IDs are six-digit
+     * numbers, so reject obviously
+     * incorrect reads.
+     */
+
+    if (
+      !/^\d{6}$/.test(code)
+    ) {
+
+      return;
+
+    }
+
+
+    scanLocked = true;
+
+
+    stopScanner();
+
+
+    showStatus(
+      "Badge " +
+      escapeHtml(code) +
+      " read.<br><br>Recording attendance...",
+      "info"
+    );
+
+
+    const pin =
+      document
+        .getElementById("pin")
+        .value
+        .trim();
+
+
+    try {
+
+      const result =
+        await sendToServer(
+          code,
+          pin
+        );
+
+
+      displayCheckInResult(
+        result
+      );
+
+    }
+
+    catch (error) {
+
+      showStatus(
+        "<strong>Attendance Error</strong>" +
+        "<br><br>" +
+        escapeHtml(
+          error.message ||
+          String(error)
+        ),
+        "error"
+      );
+
+    }
+
+
+    const button =
+      document.getElementById(
+        "scanButton"
+      );
+
+
+    button.disabled = false;
+
+    button.innerHTML =
+      "📷 SCAN NEXT STUDENT";
+
+  }
+);
+
+
+/*************************************************
+ * DISPLAY CHECK-IN RESULT
+ *************************************************/
+
+function displayCheckInResult(
+  result
+) {
+
+  if (
+    result.success &&
+    result.type ===
+      "CHECKED_IN"
+  ) {
+
+    showStatus(
+
+      "✅ <strong>CHECKED IN!</strong>" +
+
+      "<div class='student-name'>" +
+      escapeHtml(
+        result.studentName
+      ) +
+      "</div>" +
+
+      "<div class='small'>" +
+      "Events Attended" +
+      "</div>" +
+
+      "<div class='event-count'>" +
+      escapeHtml(
+        result.totalEvents
+      ) +
+      "</div>" +
+
+      "<div>" +
+      escapeHtml(
+        result.event
+      ) +
+      "</div>",
+
+      "success"
+
+    );
+
     return;
+
   }
 
 
   if (
-    !data ||
-    !data.codeResult ||
-    !data.codeResult.code
+    result.type ===
+      "DUPLICATE"
   ) {
 
-    return;
+    showStatus(
 
-  }
+      "⚠️ <strong>ALREADY CHECKED IN</strong>" +
 
+      "<div class='student-name'>" +
+      escapeHtml(
+        result.studentName || ""
+      ) +
+      "</div>" +
 
-  const code =
-    String(
-      data.codeResult.code
-    ).trim();
+      "<br>" +
 
+      escapeHtml(
+        result.message
+      ),
 
-  const format =
-    data.codeResult.format ||
-    "Unknown";
+      "warning"
 
-
-  /*
-    Student IDs appear to be numeric.
-
-    Requiring several digits helps
-    prevent random false detections.
-  */
-
-  if (!/^\d{5,20}$/.test(code)) {
+    );
 
     return;
-
-  }
-
-
-  scanLocked = true;
-
-
-  if (navigator.vibrate) {
-
-    navigator.vibrate(150);
 
   }
 
 
   showStatus(
 
-    "✅ <strong>BARCODE READ!</strong>" +
+    "<strong>Unable to Check In</strong>" +
 
-    "<div class='barcode'>" +
-    escapeHtml(code) +
-    "</div>" +
+    "<br><br>" +
 
-    "<div class='format'>" +
-    "Format: " +
-    escapeHtml(format) +
-    "</div>",
+    escapeHtml(
+      result.message ||
+      "Unknown error."
+    ),
 
-    "success"
+    "error"
 
   );
 
-
-  stopScanner();
-
-
-  const button =
-    document.getElementById("scanButton");
+}
 
 
-  button.disabled = false;
-
-  button.innerHTML =
-    "📷 SCAN ANOTHER BADGE";
-
-});
-
-
-/* --------------------------
-   STOP SCANNER
--------------------------- */
+/*************************************************
+ * STOP SCANNER
+ *************************************************/
 
 function stopScanner() {
 
@@ -490,15 +901,18 @@ function stopScanner() {
 
 
   document
-    .getElementById("scanner-container")
-    .style.display = "none";
+    .getElementById(
+      "scanner-container"
+    )
+    .style.display =
+      "none";
 
 }
 
 
-/* --------------------------
-   STATUS
--------------------------- */
+/*************************************************
+ * STATUS MESSAGE
+ *************************************************/
 
 function showStatus(
   message,
@@ -506,7 +920,9 @@ function showStatus(
 ) {
 
   const status =
-    document.getElementById("status");
+    document.getElementById(
+      "status"
+    );
 
 
   status.className =
@@ -519,9 +935,9 @@ function showStatus(
 }
 
 
-/* --------------------------
-   SAFE TEXT
--------------------------- */
+/*************************************************
+ * SAFE DISPLAY
+ *************************************************/
 
 function escapeHtml(value) {
 
