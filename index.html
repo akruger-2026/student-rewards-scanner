@@ -198,7 +198,7 @@
       color: white;
     }
 
-    /* SCAN */
+    /* SCANNER */
 
     .scan-button {
       margin-top: 16px;
@@ -210,8 +210,6 @@
     .scan-button.reward-mode {
       background: #9334e6;
     }
-
-    /* CAMERA */
 
     #scanner-container {
       position: relative;
@@ -236,9 +234,9 @@
     }
 
     /*
-      WORKING CODE 39 SCANNER SETTINGS.
-      DO NOT CHANGE.
-    */
+     * WORKING CODE 39 SCANNER GUIDE
+     * DO NOT CHANGE
+     */
 
     .scan-guide {
       position: absolute;
@@ -274,7 +272,7 @@
       border: 2px solid #1a73e8;
       border-radius: 14px;
       padding: 16px;
-      margin-bottom: 14px;
+      margin-bottom: 16px;
     }
 
     .setup-header-title {
@@ -290,6 +288,25 @@
       line-height: 1.4;
     }
 
+    .event-section-title {
+      text-align: left;
+      margin: 22px 3px 10px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .current-title {
+      color: #137333;
+    }
+
+    .upcoming-title {
+      color: #174ea6;
+    }
+
+    .past-title {
+      color: #5f6368;
+    }
+
     .event-option {
       background: white;
       border: 2px solid #dadce0;
@@ -302,6 +319,11 @@
     .event-option.current {
       background: #e6f4ea;
       border: 3px solid #34a853;
+    }
+
+    .event-option.past {
+      background: #f8f9fa;
+      border: 2px solid #bdc1c6;
     }
 
     .event-option-name {
@@ -319,6 +341,28 @@
       margin-top: 4px;
       color: #888;
       font-size: 12px;
+    }
+
+    .today-badge {
+      display: inline-block;
+      margin-top: 9px;
+      padding: 6px 10px;
+      background: #e8f0fe;
+      color: #174ea6;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .past-badge {
+      display: inline-block;
+      margin-top: 9px;
+      padding: 6px 10px;
+      background: #e8eaed;
+      color: #5f6368;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
     }
 
     .current-badge {
@@ -340,11 +384,29 @@
       padding: 14px;
     }
 
-    .refresh-button {
-      margin-top: 15px;
+    .past-activate-button {
+      margin-top: 13px;
       background: #5f6368;
       color: white;
       font-size: 16px;
+      padding: 14px;
+    }
+
+    .refresh-button {
+      margin-top: 20px;
+      background: #5f6368;
+      color: white;
+      font-size: 16px;
+    }
+
+    .empty-section {
+      background: #f8f9fa;
+      border: 2px dashed #bdc1c6;
+      border-radius: 12px;
+      padding: 15px;
+      color: #666;
+      font-size: 14px;
+      text-align: center;
     }
 
     /* STATUS */
@@ -576,7 +638,7 @@
   </div>
 
 
-  <!-- SCAN -->
+  <!-- SCAN BUTTON -->
 
   <button
     id="scanButton"
@@ -702,7 +764,6 @@ async function testConnection() {
 
       connectionVerified = true;
 
-
       button.innerHTML =
         "✓ CONNECTED";
 
@@ -776,9 +837,7 @@ async function testConnection() {
  * DISPLAY ACTIVE EVENT
  *************************************************/
 
-function displayActiveEvent(
-  event
-) {
+function displayActiveEvent(event) {
 
   const section =
     document.getElementById(
@@ -851,7 +910,6 @@ function displayActiveEvent(
     title =
       "⚠️ MULTIPLE ACTIVE EVENTS";
 
-
     message =
       "More than one event is marked TRUE. " +
       "Use Event Setup to select the correct event.";
@@ -882,7 +940,9 @@ function displayActiveEvent(
 
     "<br>" +
 
-    "<strong>Reward Redemption and Event Setup are still available.</strong>" +
+    "<strong>" +
+    "Reward Redemption and Event Setup are still available." +
+    "</strong>" +
 
     "</div>";
 }
@@ -945,12 +1005,11 @@ function setMode(mode) {
 
   if (
     mode ===
-    "CHECK_IN"
+      "CHECK_IN"
   ) {
 
     checkinButton.className =
       "mode-button active-checkin";
-
 
     scanButton.style.display =
       "block";
@@ -961,15 +1020,12 @@ function setMode(mode) {
     scanButton.innerHTML =
       "📷 SCAN STUDENT BADGE";
 
-
     scanButton.disabled =
       !connectionVerified ||
       !activeEventReady;
 
-
     checkinButton.disabled =
       !activeEventReady;
-
 
     clearStatus();
 
@@ -981,12 +1037,11 @@ function setMode(mode) {
 
   if (
     mode ===
-    "REWARD_LOOKUP"
+      "REWARD_LOOKUP"
   ) {
 
     rewardButton.className =
       "mode-button active-reward";
-
 
     scanButton.style.display =
       "block";
@@ -999,7 +1054,6 @@ function setMode(mode) {
 
     scanButton.disabled =
       !connectionVerified;
-
 
     clearStatus();
 
@@ -1016,14 +1070,11 @@ function setMode(mode) {
   setupButton.className =
     "mode-button setup-mode-button active-setup";
 
-
   scanButton.style.display =
     "none";
 
-
   setupSection.style.display =
     "block";
-
 
   clearStatus();
 
@@ -1067,7 +1118,6 @@ function updateTip() {
         "Use Event Setup to select an active event.";
     }
 
-
     return;
   }
 
@@ -1094,7 +1144,7 @@ function updateTip() {
 
 
 /*************************************************
- * SEND TO APPS SCRIPT
+ * SEND TO SERVER
  *************************************************/
 
 async function sendToServer(
@@ -1176,7 +1226,7 @@ async function sendToServer(
 
 
 /*************************************************
- * LOAD EVENT LIST
+ * LOAD EVENTS
  *************************************************/
 
 async function loadEvents() {
@@ -1234,7 +1284,6 @@ async function loadEvents() {
 
         "</div>";
 
-
       return;
     }
 
@@ -1270,14 +1319,46 @@ async function loadEvents() {
  * DISPLAY EVENT LIST
  *************************************************/
 
-function displayEventList(
-  result
-) {
+function displayEventList(result) {
 
   const section =
     document.getElementById(
       "eventSetupSection"
     );
+
+
+  const activeEvent =
+    result.activeEvent || null;
+
+  const activeId =
+    activeEvent &&
+    activeEvent.success
+      ? activeEvent.eventId
+      : "";
+
+
+  const upcoming =
+    (result.upcomingEvents || [])
+      .filter(
+        function(event) {
+          return (
+            event.eventId !==
+            activeId
+          );
+        }
+      );
+
+
+  const past =
+    (result.pastEvents || [])
+      .filter(
+        function(event) {
+          return (
+            event.eventId !==
+            activeId
+          );
+        }
+      );
 
 
   let html =
@@ -1296,83 +1377,123 @@ function displayEventList(
     "</div>";
 
 
-  const events =
-    result.events || [];
+  /*********************************************
+   * CURRENT ACTIVE EVENT
+   *********************************************/
+
+  html +=
+
+    "<div class='event-section-title current-title'>" +
+    "🟢 Current Active Event" +
+    "</div>";
 
 
   if (
-    events.length === 0
+    activeEvent &&
+    activeEvent.success
   ) {
 
     html +=
 
-      "<div class='event-error'>" +
+      "<div class='event-option current'>" +
 
-      "<div class='event-error-title'>" +
-      "No Events Found" +
+      "<div class='event-option-name'>" +
+      escapeHtml(
+        activeEvent.displayName
+      ) +
       "</div>" +
 
-      "<div class='event-error-message'>" +
-      "Add events to the Events sheet first." +
+      "<div class='event-option-date'>" +
+      escapeHtml(
+        activeEvent.date
+      ) +
+      "</div>" +
+
+      "<div class='event-option-id'>" +
+      "Event ID: " +
+      escapeHtml(
+        activeEvent.eventId
+      ) +
+      "</div>" +
+
+      "<div class='current-badge'>" +
+      "✓ CURRENT ACTIVE EVENT" +
       "</div>" +
 
       "</div>";
 
+  } else {
 
-    section.innerHTML =
-      html;
+    html +=
 
-
-    return;
+      "<div class='empty-section'>" +
+      "No event is currently active." +
+      "</div>";
   }
 
 
-  events.forEach(
-    function(event) {
+  /*********************************************
+   * UPCOMING EVENTS
+   *********************************************/
 
-      html +=
+  html +=
 
-        "<div class='event-option " +
-
-        (
-          event.active
-            ? "current"
-            : ""
-        ) +
-
-        "'>" +
-
-        "<div class='event-option-name'>" +
-        escapeHtml(
-          event.displayName
-        ) +
-        "</div>" +
-
-        "<div class='event-option-date'>" +
-        escapeHtml(
-          event.date
-        ) +
-        "</div>" +
-
-        "<div class='event-option-id'>" +
-        "Event ID: " +
-        escapeHtml(
-          event.eventId
-        ) +
-        "</div>";
+    "<div class='event-section-title upcoming-title'>" +
+    "📅 Upcoming Events" +
+    "</div>";
 
 
-      if (
-        event.active
-      ) {
+  if (
+    upcoming.length === 0
+  ) {
+
+    html +=
+
+      "<div class='empty-section'>" +
+      "No other upcoming events." +
+      "</div>";
+
+  } else {
+
+    upcoming.forEach(
+      function(event) {
 
         html +=
 
-          "<div class='current-badge'>" +
-          "✓ CURRENT ACTIVE EVENT" +
+          "<div class='event-option'>" +
+
+          "<div class='event-option-name'>" +
+          escapeHtml(
+            event.displayName
+          ) +
+          "</div>" +
+
+          "<div class='event-option-date'>" +
+          escapeHtml(
+            event.date
+          ) +
+          "</div>" +
+
+          "<div class='event-option-id'>" +
+          "Event ID: " +
+          escapeHtml(
+            event.eventId
+          ) +
           "</div>";
 
-      } else {
+
+        if (
+          event.dateStatus ===
+            "TODAY"
+        ) {
+
+          html +=
+
+            "<div class='today-badge'>" +
+            "TODAY" +
+            "</div>";
+        }
+
 
         html +=
 
@@ -1390,18 +1511,95 @@ function displayEventList(
             event.displayName
           ) +
 
-          ")'>" +
+          ",false)'>" +
 
           "MAKE ACTIVE" +
 
-          "</button>";
+          "</button>" +
+
+          "</div>";
       }
+    );
+  }
 
 
-      html +=
-        "</div>";
-    }
-  );
+  /*********************************************
+   * PAST EVENTS
+   *********************************************/
+
+  html +=
+
+    "<div class='event-section-title past-title'>" +
+    "🕒 Past Events" +
+    "</div>";
+
+
+  if (
+    past.length === 0
+  ) {
+
+    html +=
+
+      "<div class='empty-section'>" +
+      "No past events yet." +
+      "</div>";
+
+  } else {
+
+    past.forEach(
+      function(event) {
+
+        html +=
+
+          "<div class='event-option past'>" +
+
+          "<div class='event-option-name'>" +
+          escapeHtml(
+            event.displayName
+          ) +
+          "</div>" +
+
+          "<div class='event-option-date'>" +
+          escapeHtml(
+            event.date
+          ) +
+          "</div>" +
+
+          "<div class='event-option-id'>" +
+          "Event ID: " +
+          escapeHtml(
+            event.eventId
+          ) +
+          "</div>" +
+
+          "<div class='past-badge'>" +
+          "PAST EVENT" +
+          "</div>" +
+
+          "<button " +
+          "class='past-activate-button' " +
+          "onclick='confirmEventChange(" +
+
+          JSON.stringify(
+            event.eventId
+          ) +
+
+          "," +
+
+          JSON.stringify(
+            event.displayName
+          ) +
+
+          ",true)'>" +
+
+          "ACTIVATE PAST EVENT" +
+
+          "</button>" +
+
+          "</div>";
+      }
+    );
+  }
 
 
   html +=
@@ -1424,8 +1622,61 @@ function displayEventList(
 
 function confirmEventChange(
   eventId,
-  eventName
+  eventName,
+  isPast
 ) {
+
+  /*
+   * Past events require an extra warning.
+   */
+
+  if (isPast) {
+
+    const firstConfirm =
+      window.confirm(
+
+        "⚠️ PAST EVENT\n\n" +
+
+        eventName +
+
+        "\n\nThis event has already occurred.\n\n" +
+
+        "Only activate it if you are correcting or entering attendance for a past event.\n\n" +
+
+        "Continue?"
+
+      );
+
+
+    if (!firstConfirm) {
+      return;
+    }
+
+
+    const secondConfirm =
+      window.confirm(
+
+        "Confirm past event activation:\n\n" +
+
+        eventName +
+
+        "\n\nNew student check-ins will be recorded to this past event until another event is activated."
+
+      );
+
+
+    if (!secondConfirm) {
+      return;
+    }
+
+
+    activateEvent(
+      eventId
+    );
+
+    return;
+  }
+
 
   const confirmed =
     window.confirm(
@@ -1513,18 +1764,10 @@ async function activateEvent(
     }
 
 
-    /*********************************************
-     * UPDATE TOP ACTIVE EVENT DISPLAY
-     *********************************************/
-
     displayActiveEvent(
       result.activeEvent
     );
 
-
-    /*********************************************
-     * RE-ENABLE CHECK-IN MODE
-     *********************************************/
 
     document
       .getElementById(
@@ -1534,25 +1777,46 @@ async function activateEvent(
         false;
 
 
-    showStatus(
+    let successMessage =
+
       "✅ <strong>ACTIVE EVENT CHANGED</strong>" +
+
       "<br><br>" +
+
       escapeHtml(
         result.activeEvent.displayName
       ) +
+
       "<br>" +
+
       escapeHtml(
         result.activeEvent.date
       ) +
+
       "<br><br>" +
-      "Student check-ins will now be recorded to this event.",
-      "success"
+
+      "Student check-ins will now be recorded to this event.";
+
+
+    if (
+      result.activatedPastEvent
+    ) {
+
+      successMessage +=
+
+        "<br><br>" +
+
+        "⚠️ <strong>This is a past event.</strong>";
+    }
+
+
+    showStatus(
+      successMessage,
+      result.activatedPastEvent
+        ? "warning"
+        : "success"
     );
 
-
-    /*********************************************
-     * REFRESH EVENT LIST
-     *********************************************/
 
     await loadEvents();
 
@@ -1658,7 +1922,6 @@ function startScanner() {
 
   /*************************************************
    * WORKING CODE 39 CONFIGURATION
-   *
    * DO NOT CHANGE
    *************************************************/
 
@@ -1765,7 +2028,6 @@ function startScanner() {
 
       button.disabled =
         false;
-
 
       resetScanButton();
 
@@ -2326,7 +2588,6 @@ async function redeemReward(
       currentStudentId =
         null;
 
-
       return;
     }
 
@@ -2355,7 +2616,6 @@ async function redeemReward(
         "warning"
 
       );
-
 
       return;
     }
@@ -2649,7 +2909,6 @@ function showStatus(
   status.className =
     type;
 
-
   status.innerHTML =
     message;
 }
@@ -2678,9 +2937,7 @@ function clearStatus() {
  * SAFE DISPLAY
  *************************************************/
 
-function escapeHtml(
-  value
-) {
+function escapeHtml(value) {
 
   return String(value)
 
