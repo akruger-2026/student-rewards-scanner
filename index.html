@@ -56,7 +56,7 @@
       background: #f8f9fa;
       padding: 18px;
       border-radius: 12px;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
 
     .pin-section label {
@@ -87,12 +87,69 @@
     }
 
     button:disabled {
-      opacity: .55;
+      opacity: .45;
+      cursor: not-allowed;
     }
 
     .test-button {
       background: #1a73e8;
       color: white;
+    }
+
+    /* ACTIVE EVENT */
+
+    #activeEventSection {
+      display: none;
+      margin: 18px 0;
+    }
+
+    .active-event {
+      background: #e6f4ea;
+      border: 3px solid #34a853;
+      border-radius: 16px;
+      padding: 18px;
+    }
+
+    .active-event-label {
+      color: #137333;
+      font-size: 15px;
+      font-weight: bold;
+      letter-spacing: .5px;
+    }
+
+    .active-event-name {
+      font-size: 24px;
+      font-weight: bold;
+      margin: 8px 0 4px;
+    }
+
+    .active-event-date {
+      color: #555;
+      font-size: 16px;
+    }
+
+    .active-event-ready {
+      margin-top: 10px;
+      color: #137333;
+      font-weight: bold;
+    }
+
+    .event-error {
+      background: #fce8e6;
+      border: 3px solid #d93025;
+      border-radius: 16px;
+      padding: 18px;
+    }
+
+    .event-error-title {
+      color: #b3261e;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .event-error-message {
+      margin-top: 8px;
+      line-height: 1.4;
     }
 
     /* MODE */
@@ -170,9 +227,8 @@
     }
 
     /*
-      IMPORTANT:
-      This is the working Code 39
-      scanning guide.
+      WORKING CODE 39 SCANNER GUIDE.
+      DO NOT CHANGE.
     */
 
     .scan-guide {
@@ -260,7 +316,7 @@
       margin-bottom: 15px;
     }
 
-    /* REWARD DISPLAY */
+    /* REWARDS */
 
     .reward-card {
       background: white;
@@ -387,6 +443,11 @@
   </div>
 
 
+  <!-- ACTIVE EVENT -->
+
+  <div id="activeEventSection"></div>
+
+
   <!-- MODE -->
 
   <div id="modeSection">
@@ -399,7 +460,7 @@
 
       <button
         id="checkinModeButton"
-        class="mode-button active-checkin"
+        class="mode-button"
         onclick="setMode('CHECK_IN')">
         🏟️ EVENT<br>CHECK-IN
       </button>
@@ -469,6 +530,8 @@ let scanLocked = false;
 
 let connectionVerified = false;
 
+let activeEventReady = false;
+
 let currentMode = "CHECK_IN";
 
 let currentStudentId = null;
@@ -499,16 +562,19 @@ async function testConnection() {
 
 
   const button =
-    document.getElementById("testButton");
+    document.getElementById(
+      "testButton"
+    );
 
 
   button.disabled = true;
 
-  button.innerHTML = "TESTING...";
+  button.innerHTML =
+    "TESTING...";
 
 
   showStatus(
-    "Testing connection to the attendance system...",
+    "Connecting to the Student Rewards system...",
     "info"
   );
 
@@ -524,31 +590,44 @@ async function testConnection() {
 
     if (
       result.success &&
-      result.type === "CONNECTION_TEST"
+      result.type ===
+        "CONNECTION_TEST"
     ) {
 
       connectionVerified = true;
 
-      document.getElementById(
-        "scanButton"
-      ).disabled = false;
-
-      document.getElementById(
-        "modeSection"
-      ).style.display = "block";
 
       button.innerHTML =
         "✓ CONNECTED";
 
 
-      showStatus(
-        "✅ <strong>CONNECTED!</strong><br><br>" +
-        "Choose a mode and scan a student badge.",
-        "success"
+      document
+        .getElementById(
+          "modeSection"
+        )
+        .style.display =
+          "block";
+
+
+      displayActiveEvent(
+        result.activeEvent
       );
 
 
-      updateTip();
+      /*
+       * Start in check-in mode.
+       */
+
+      setMode(
+        "CHECK_IN"
+      );
+
+
+      showStatus(
+        "✅ <strong>CONNECTED!</strong><br><br>" +
+        "Scanner is ready.",
+        "success"
+      );
 
     }
 
@@ -596,14 +675,145 @@ async function testConnection() {
 
 
 /*************************************************
+ * DISPLAY ACTIVE EVENT
+ *************************************************/
+
+function displayActiveEvent(
+  event
+) {
+
+  const section =
+    document.getElementById(
+      "activeEventSection"
+    );
+
+
+  section.style.display =
+    "block";
+
+
+  /*
+   * ACTIVE EVENT IS READY
+   */
+
+  if (
+    event &&
+    event.success &&
+    event.type ===
+      "ACTIVE_EVENT"
+  ) {
+
+    activeEventReady = true;
+
+
+    section.innerHTML =
+
+      "<div class='active-event'>" +
+
+      "<div class='active-event-label'>" +
+      "🟢 ACTIVE EVENT" +
+      "</div>" +
+
+      "<div class='active-event-name'>" +
+      escapeHtml(
+        event.displayName
+      ) +
+      "</div>" +
+
+      "<div class='active-event-date'>" +
+      escapeHtml(
+        event.date
+      ) +
+      "</div>" +
+
+      "<div class='active-event-ready'>" +
+      "✓ Ready for student check-in" +
+      "</div>" +
+
+      "</div>";
+
+
+    return;
+  }
+
+
+  /*
+   * ACTIVE EVENT PROBLEM
+   */
+
+  activeEventReady = false;
+
+
+  let title =
+    "⚠️ CHECK-IN NOT AVAILABLE";
+
+
+  let message =
+    "There is currently no active event.";
+
+
+  if (
+    event &&
+    event.type ===
+      "MULTIPLE_ACTIVE_EVENTS"
+  ) {
+
+    title =
+      "⚠️ MULTIPLE ACTIVE EVENTS";
+
+
+    message =
+      "More than one event is marked TRUE. " +
+      "Open the Events tab and leave only one event active.";
+
+  }
+
+  else if (
+    event &&
+    event.message
+  ) {
+
+    message =
+      event.message;
+  }
+
+
+  section.innerHTML =
+
+    "<div class='event-error'>" +
+
+    "<div class='event-error-title'>" +
+    title +
+    "</div>" +
+
+    "<div class='event-error-message'>" +
+    escapeHtml(
+      message
+    ) +
+    "</div>" +
+
+    "<br>" +
+
+    "<strong>Reward Redemption is still available.</strong>" +
+
+    "</div>";
+}
+
+
+/*************************************************
  * MODE
  *************************************************/
 
 function setMode(mode) {
 
-  currentMode = mode;
+  currentMode =
+    mode;
 
-  currentStudentId = null;
+  currentStudentId =
+    null;
+
+
+  stopScanner();
 
 
   const checkinButton =
@@ -611,10 +821,12 @@ function setMode(mode) {
       "checkinModeButton"
     );
 
+
   const rewardButton =
     document.getElementById(
       "rewardModeButton"
     );
+
 
   const scanButton =
     document.getElementById(
@@ -623,20 +835,47 @@ function setMode(mode) {
 
 
   if (
-    mode === "CHECK_IN"
+    mode ===
+    "CHECK_IN"
   ) {
 
     checkinButton.className =
       "mode-button active-checkin";
 
+
     rewardButton.className =
       "mode-button";
+
 
     scanButton.className =
       "scan-button";
 
+
     scanButton.innerHTML =
       "📷 SCAN STUDENT BADGE";
+
+
+    /*
+     * Check-in requires an active event.
+     */
+
+    scanButton.disabled =
+      !connectionVerified ||
+      !activeEventReady;
+
+
+    if (!activeEventReady) {
+
+      checkinButton.disabled =
+        true;
+
+    }
+
+    else {
+
+      checkinButton.disabled =
+        false;
+    }
 
   }
 
@@ -645,20 +884,28 @@ function setMode(mode) {
     checkinButton.className =
       "mode-button";
 
+
     rewardButton.className =
       "mode-button active-reward";
+
 
     scanButton.className =
       "scan-button reward-mode";
 
+
     scanButton.innerHTML =
       "🎁 SCAN BADGE FOR REWARDS";
 
+
+    /*
+     * Reward redemption does NOT require
+     * an active event.
+     */
+
+    scanButton.disabled =
+      !connectionVerified;
+
   }
-
-
-  scanButton.disabled =
-    !connectionVerified;
 
 
   clearStatus();
@@ -674,17 +921,34 @@ function setMode(mode) {
 function updateTip() {
 
   const tip =
-    document.getElementById("tip");
+    document.getElementById(
+      "tip"
+    );
 
 
   if (
-    currentMode === "CHECK_IN"
+    currentMode ===
+    "CHECK_IN"
   ) {
 
-    tip.innerHTML =
-      "🏟️ <strong>Event Check-In Mode</strong>" +
-      "<br>" +
-      "Scanning records attendance for the active event.";
+    if (
+      activeEventReady
+    ) {
+
+      tip.innerHTML =
+        "🏟️ <strong>Event Check-In Mode</strong>" +
+        "<br>" +
+        "Scanning records attendance for the active event.";
+
+    }
+
+    else {
+
+      tip.innerHTML =
+        "⚠️ <strong>Event Check-In Disabled</strong>" +
+        "<br>" +
+        "Correct the active event in the Events sheet first.";
+    }
 
   }
 
@@ -693,7 +957,7 @@ function updateTip() {
     tip.innerHTML =
       "🎁 <strong>Reward Redemption Mode</strong>" +
       "<br>" +
-      "Scanning only looks up rewards. It does NOT record attendance.";
+      "Scanning looks up rewards only. It does NOT record attendance.";
   }
 }
 
@@ -710,7 +974,9 @@ async function sendToServer(
 
   const pin =
     document
-      .getElementById("pin")
+      .getElementById(
+        "pin"
+      )
       .value
       .trim();
 
@@ -722,11 +988,14 @@ async function sendToServer(
 
       {
 
-        method: "POST",
+        method:
+          "POST",
 
         headers: {
+
           "Content-Type":
             "text/plain;charset=utf-8"
+
         },
 
         body:
@@ -760,7 +1029,9 @@ async function sendToServer(
 
   try {
 
-    return JSON.parse(text);
+    return JSON.parse(
+      text
+    );
 
   }
 
@@ -779,10 +1050,31 @@ async function sendToServer(
 
 function startScanner() {
 
-  if (!connectionVerified) {
+  if (
+    !connectionVerified
+  ) {
 
     showStatus(
       "Please test the connection before scanning.",
+      "error"
+    );
+
+    return;
+  }
+
+
+  /*
+   * Double safety check.
+   */
+
+  if (
+    currentMode ===
+      "CHECK_IN" &&
+    !activeEventReady
+  ) {
+
+    showStatus(
+      "Event Check-In is disabled because there is no valid active event.",
       "error"
     );
 
@@ -822,7 +1114,8 @@ function startScanner() {
 
 
   if (
-    typeof Quagga === "undefined"
+    typeof Quagga ===
+    "undefined"
   ) {
 
     showStatus(
@@ -830,7 +1123,10 @@ function startScanner() {
       "error"
     );
 
-    button.disabled = false;
+
+    button.disabled =
+      false;
+
 
     resetScanButton();
 
@@ -841,7 +1137,7 @@ function startScanner() {
   /*************************************************
    * WORKING CODE 39 CONFIGURATION
    *
-   * DO NOT CHANGE.
+   * DO NOT CHANGE
    *************************************************/
 
   Quagga.init({
@@ -930,7 +1226,10 @@ function startScanner() {
 
     if (error) {
 
-      console.error(error);
+      console.error(
+        error
+      );
+
 
       showStatus(
         "<strong>Scanner Error</strong><br><br>" +
@@ -941,7 +1240,10 @@ function startScanner() {
         "error"
       );
 
-      button.disabled = false;
+
+      button.disabled =
+        false;
+
 
       resetScanButton();
 
@@ -951,7 +1253,9 @@ function startScanner() {
 
     Quagga.start();
 
-    scannerRunning = true;
+
+    scannerRunning =
+      true;
 
 
     button.innerHTML =
@@ -994,23 +1298,35 @@ Quagga.onDetected(
       ).trim();
 
 
+    /*
+     * NCISD student IDs used by this
+     * scanner are six digits.
+     */
+
     if (
-      !/^\d{6}$/.test(code)
+      !/^\d{6}$/.test(
+        code
+      )
     ) {
+
       return;
     }
 
 
-    scanLocked = true;
+    scanLocked =
+      true;
 
-    currentStudentId = code;
+
+    currentStudentId =
+      code;
 
 
     stopScanner();
 
 
     if (
-      currentMode === "CHECK_IN"
+      currentMode ===
+      "CHECK_IN"
     ) {
 
       showStatus(
@@ -1045,7 +1361,8 @@ Quagga.onDetected(
 
 
       if (
-        currentMode === "CHECK_IN"
+        currentMode ===
+        "CHECK_IN"
       ) {
 
         displayCheckInResult(
@@ -1076,13 +1393,13 @@ Quagga.onDetected(
     }
 
 
-    const button =
-      document.getElementById(
+    document
+      .getElementById(
         "scanButton"
-      );
+      )
+      .disabled =
+        false;
 
-
-    button.disabled = false;
 
     resetScanButton();
   }
@@ -1099,7 +1416,8 @@ function displayCheckInResult(
 
   if (
     result.success &&
-    result.type === "CHECKED_IN"
+    result.type ===
+      "CHECKED_IN"
   ) {
 
     let html =
@@ -1107,9 +1425,11 @@ function displayCheckInResult(
       "✅ <strong>CHECKED IN!</strong>" +
 
       "<div class='student-name'>" +
+
       escapeHtml(
         result.studentName
       ) +
+
       "</div>" +
 
       "<div class='events-label'>" +
@@ -1117,15 +1437,19 @@ function displayCheckInResult(
       "</div>" +
 
       "<div class='event-count'>" +
+
       escapeHtml(
         result.totalEvents
       ) +
+
       "</div>" +
 
       "<div class='event-name'>" +
+
       escapeHtml(
         result.event
       ) +
+
       "</div>";
 
 
@@ -1140,12 +1464,14 @@ function displayCheckInResult(
       "success"
     );
 
+
     return;
   }
 
 
   if (
-    result.type === "DUPLICATE"
+    result.type ===
+      "DUPLICATE"
   ) {
 
     let html =
@@ -1153,15 +1479,19 @@ function displayCheckInResult(
       "⚠️ <strong>ALREADY CHECKED IN</strong>" +
 
       "<div class='student-name'>" +
+
       escapeHtml(
-        result.studentName || ""
+        result.studentName ||
+        ""
       ) +
+
       "</div>" +
 
       "<br>" +
 
       escapeHtml(
-        result.message || ""
+        result.message ||
+        ""
       );
 
 
@@ -1176,7 +1506,41 @@ function displayCheckInResult(
       "warning"
     );
 
+
     return;
+  }
+
+
+  /*
+   * If backend catches an event problem,
+   * stop additional check-ins.
+   */
+
+  if (
+    result.type ===
+      "NO_ACTIVE_EVENT" ||
+    result.type ===
+      "MULTIPLE_ACTIVE_EVENTS"
+  ) {
+
+    activeEventReady =
+      false;
+
+
+    document
+      .getElementById(
+        "scanButton"
+      )
+      .disabled =
+        true;
+
+
+    document
+      .getElementById(
+        "checkinModeButton"
+      )
+      .disabled =
+        true;
   }
 
 
@@ -1193,7 +1557,7 @@ function displayCheckInResult(
 
 
 /*************************************************
- * REWARD LOOKUP RESULT
+ * REWARD LOOKUP
  *************************************************/
 
 function displayRewardLookup(
@@ -1202,7 +1566,8 @@ function displayRewardLookup(
 
   if (
     !result.success ||
-    result.type !== "REWARD_LOOKUP"
+    result.type !==
+      "REWARD_LOOKUP"
   ) {
 
     showStatus(
@@ -1215,6 +1580,7 @@ function displayRewardLookup(
       "error"
     );
 
+
     return;
   }
 
@@ -1224,9 +1590,11 @@ function displayRewardLookup(
     "🎁 <strong>REWARD REDEMPTION</strong>" +
 
     "<div class='student-name'>" +
+
     escapeHtml(
       result.studentName
     ) +
+
     "</div>" +
 
     "<div class='events-label'>" +
@@ -1234,16 +1602,21 @@ function displayRewardLookup(
     "</div>" +
 
     "<div class='event-count'>" +
+
     escapeHtml(
       result.totalEvents
     ) +
+
     "</div>";
 
 
   const available =
+
     result.rewards &&
     result.rewards.availableRewards
+
       ? result.rewards.availableRewards
+
       : [];
 
 
@@ -1255,7 +1628,9 @@ function displayRewardLookup(
 
       "<div class='available-card'>" +
 
-      "<strong>No rewards currently available to redeem.</strong>" +
+      "<strong>" +
+      "No rewards currently available to redeem." +
+      "</strong>" +
 
       "</div>";
 
@@ -1277,6 +1652,7 @@ function displayRewardLookup(
       "reward-status"
     );
 
+
     return;
   }
 
@@ -1293,34 +1669,49 @@ function displayRewardLookup(
         "</div>" +
 
         "<div class='reward-name'>" +
+
         escapeHtml(
           reward.reward
         ) +
+
         "</div>" +
 
         "<div>" +
+
         escapeHtml(
           reward.level
         ) +
+
         " • " +
+
         escapeHtml(
           reward.eventsRequired
         ) +
+
         " Events" +
+
         "</div>" +
 
         "<button " +
+
         "class='redeem-button' " +
+
         "onclick='confirmRedemption(" +
+
         JSON.stringify(
           reward.level
         ) +
+
         "," +
+
         JSON.stringify(
           reward.reward
         ) +
+
         ")'>" +
+
         "🎁 REDEEM REWARD" +
+
         "</button>" +
 
         "</div>";
@@ -1357,10 +1748,13 @@ function confirmRedemption(
 
   const confirmed =
     window.confirm(
+
       "Redeem this reward?\n\n" +
+
       rewardName +
-      "\n\n" +
-      "Only confirm after the reward has been given to the student."
+
+      "\n\nOnly confirm after the reward has been given to the student."
+
     );
 
 
@@ -1376,14 +1770,16 @@ function confirmRedemption(
 
 
 /*************************************************
- * REDEEM
+ * REDEEM REWARD
  *************************************************/
 
 async function redeemReward(
   rewardLevel
 ) {
 
-  if (!currentStudentId) {
+  if (
+    !currentStudentId
+  ) {
 
     showStatus(
       "Please scan the student's badge again.",
@@ -1404,15 +1800,20 @@ async function redeemReward(
 
     const result =
       await sendToServer(
+
         currentStudentId,
+
         "REDEEM_REWARD",
+
         rewardLevel
+
       );
 
 
     if (
       result.success &&
-      result.type === "REWARD_REDEEMED"
+      result.type ===
+        "REWARD_REDEEMED"
     ) {
 
       let html =
@@ -1424,16 +1825,21 @@ async function redeemReward(
         "</div>" +
 
         "<div class='student-name'>" +
+
         escapeHtml(
           result.studentName
         ) +
+
         "</div>" +
 
         "<div class='reward-name'>" +
+
         "🎁 " +
+
         escapeHtml(
           result.reward
         ) +
+
         "</div>" +
 
         "<div>" +
@@ -1461,7 +1867,9 @@ async function redeemReward(
       );
 
 
-      currentStudentId = null;
+      currentStudentId =
+        null;
+
 
       return;
     }
@@ -1469,21 +1877,29 @@ async function redeemReward(
 
     if (
       result.type ===
-      "ALREADY_REDEEMED"
+        "ALREADY_REDEEMED"
     ) {
 
       showStatus(
+
         "⚠️ <strong>ALREADY REDEEMED</strong>" +
+
         "<br><br>" +
+
         escapeHtml(
           result.reward || ""
         ) +
+
         "<br>" +
+
         escapeHtml(
           result.message || ""
         ),
+
         "warning"
+
       );
+
 
       return;
     }
@@ -1517,7 +1933,7 @@ async function redeemReward(
 
 
 /*************************************************
- * REWARD PROGRESS FOR CHECK-IN
+ * CHECK-IN REWARD DISPLAY
  *************************************************/
 
 function buildRewardDisplay(
@@ -1529,7 +1945,8 @@ function buildRewardDisplay(
   }
 
 
-  let html = "";
+  let html =
+    "";
 
 
   if (
@@ -1546,20 +1963,27 @@ function buildRewardDisplay(
       "</div>" +
 
       "<div class='reward-name'>" +
+
       escapeHtml(
         rewards.justUnlocked.reward
       ) +
+
       "</div>" +
 
       "<div>" +
+
       escapeHtml(
         rewards.justUnlocked.level
       ) +
+
       " • " +
+
       escapeHtml(
         rewards.justUnlocked.eventsRequired
       ) +
+
       " Events" +
+
       "</div>" +
 
       "<div class='reward-progress'>" +
@@ -1652,29 +2076,40 @@ function buildNextReward(
     "</div>" +
 
     "<div class='reward-name'>" +
+
     escapeHtml(
       reward.reward
     ) +
+
     "</div>" +
 
     "<div>" +
+
     escapeHtml(
       reward.level
     ) +
+
     " • " +
+
     escapeHtml(
       reward.eventsRequired
     ) +
+
     " Events" +
+
     "</div>" +
 
     "<div class='reward-progress'>" +
 
     (
       remaining === 1
+
         ? "<strong>1 more event to go!</strong>"
+
         : "<strong>" +
-          escapeHtml(remaining) +
+          escapeHtml(
+            remaining
+          ) +
           " more events to go!</strong>"
     ) +
 
@@ -1699,11 +2134,17 @@ function resetScanButton() {
 
 
   if (
-    currentMode === "CHECK_IN"
+    currentMode ===
+      "CHECK_IN"
   ) {
 
     button.innerHTML =
       "📷 SCAN NEXT STUDENT";
+
+
+    button.disabled =
+      !connectionVerified ||
+      !activeEventReady;
 
   }
 
@@ -1711,6 +2152,10 @@ function resetScanButton() {
 
     button.innerHTML =
       "🎁 SCAN BADGE FOR REWARDS";
+
+
+    button.disabled =
+      !connectionVerified;
   }
 }
 
@@ -1721,11 +2166,14 @@ function resetScanButton() {
 
 function stopScanner() {
 
-  if (scannerRunning) {
+  if (
+    scannerRunning
+  ) {
 
     Quagga.stop();
 
-    scannerRunning = false;
+    scannerRunning =
+      false;
   }
 
 
@@ -1733,7 +2181,8 @@ function stopScanner() {
     .getElementById(
       "scanner-container"
     )
-    .style.display = "none";
+    .style.display =
+      "none";
 }
 
 
@@ -1769,11 +2218,16 @@ function clearStatus() {
     );
 
 
-  status.className = "";
+  status.className =
+    "";
 
-  status.innerHTML = "";
 
-  status.style.display = "none";
+  status.innerHTML =
+    "";
+
+
+  status.style.display =
+    "none";
 }
 
 
@@ -1781,19 +2235,36 @@ function clearStatus() {
  * SAFE DISPLAY
  *************************************************/
 
-function escapeHtml(value) {
+function escapeHtml(
+  value
+) {
 
   return String(value)
 
-    .replace(/&/g, "&amp;")
+    .replace(
+      /&/g,
+      "&amp;"
+    )
 
-    .replace(/</g, "&lt;")
+    .replace(
+      /</g,
+      "&lt;"
+    )
 
-    .replace(/>/g, "&gt;")
+    .replace(
+      />/g,
+      "&gt;"
+    )
 
-    .replace(/"/g, "&quot;")
+    .replace(
+      /"/g,
+      "&quot;"
+    )
 
-    .replace(/'/g, "&#039;");
+    .replace(
+      /'/g,
+      "&#039;"
+    );
 }
 
 </script>
