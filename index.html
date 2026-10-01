@@ -8,6 +8,8 @@
 
   <title>Student Rewards Scanner</title>
 
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -19,7 +21,7 @@
 
     .container {
       max-width: 500px;
-      margin: 40px auto;
+      margin: 20px auto;
       background: white;
       padding: 30px 20px;
       border-radius: 18px;
@@ -30,34 +32,214 @@
       margin-bottom: 5px;
     }
 
-    p {
+    .subtitle {
       color: #666;
+      margin-bottom: 25px;
+    }
+
+    button {
+      width: 95%;
+      padding: 18px;
+      font-size: 20px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      background: #188038;
+      color: white;
+      margin-bottom: 20px;
+    }
+
+    #reader {
+      width: 100%;
+      margin: 15px auto;
+    }
+
+    .result {
+      margin-top: 20px;
+      padding: 20px;
+      border-radius: 12px;
+      display: none;
     }
 
     .success {
-      margin-top: 30px;
-      padding: 20px;
+      display: block;
       background: #e6f4ea;
       border: 2px solid #34a853;
-      border-radius: 12px;
-      font-size: 20px;
+    }
+
+    .error {
+      display: block;
+      background: #fce8e6;
+      border: 2px solid #d93025;
+    }
+
+    .barcode {
+      font-size: 30px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .instructions {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 20px;
     }
   </style>
 </head>
 
 <body>
 
-  <div class="container">
+<div class="container">
 
-    <h1>🏆 Student Rewards</h1>
+  <h1>🏆 Student Rewards</h1>
 
-    <p>Sporting Event Check-In</p>
-
-    <div class="success">
-      ✅ Scanner website is working!
-    </div>
-
+  <div class="subtitle">
+    Sporting Event Check-In
   </div>
+
+  <button onclick="startScanner()">
+    📷 SCAN STUDENT BADGE
+  </button>
+
+  <div class="instructions">
+    Point the back camera at the barcode on the student's ID badge.
+  </div>
+
+  <div id="reader"></div>
+
+  <div id="result" class="result"></div>
+
+</div>
+
+
+<script>
+
+let scanner;
+let scanLocked = false;
+
+
+function startScanner() {
+
+  scanLocked = false;
+
+  const result =
+    document.getElementById("result");
+
+  result.style.display = "block";
+  result.className = "result";
+  result.innerHTML = "Starting camera...";
+
+
+  if (typeof Html5Qrcode === "undefined") {
+
+    result.className = "result error";
+
+    result.innerHTML =
+      "❌ Barcode scanner library did not load.";
+
+    return;
+  }
+
+
+  scanner =
+    new Html5Qrcode("reader");
+
+
+  const config = {
+
+    fps: 10,
+
+    qrbox: function(width, height) {
+
+      return {
+        width: Math.floor(width * 0.85),
+        height: Math.floor(width * 0.35)
+      };
+
+    },
+
+    formatsToSupport: [
+      Html5QrcodeSupportedFormats.CODE_39,
+      Html5QrcodeSupportedFormats.CODE_93,
+      Html5QrcodeSupportedFormats.CODE_128,
+      Html5QrcodeSupportedFormats.CODABAR,
+      Html5QrcodeSupportedFormats.ITF
+    ]
+  };
+
+
+  scanner.start(
+
+    { facingMode: "environment" },
+
+    config,
+
+    barcodeFound,
+
+    function(errorMessage) {
+      // Scanner is searching for a barcode.
+    }
+
+  )
+
+  .then(function() {
+
+    result.innerHTML =
+      "Camera active — scan a badge.";
+
+  })
+
+  .catch(function(error) {
+
+    result.className =
+      "result error";
+
+    result.innerHTML =
+      "<strong>Camera Error</strong><br><br>" +
+      String(error);
+
+  });
+
+}
+
+
+function barcodeFound(decodedText) {
+
+  if (scanLocked) {
+    return;
+  }
+
+  scanLocked = true;
+
+
+  const result =
+    document.getElementById("result");
+
+
+  result.className =
+    "result success";
+
+
+  result.innerHTML =
+    "✅ <strong>BARCODE READ!</strong>" +
+    "<div class='barcode'>" +
+    decodedText +
+    "</div>";
+
+
+  if (scanner) {
+
+    scanner.stop()
+      .then(function() {
+        scanner.clear();
+      });
+
+  }
+
+}
+
+</script>
 
 </body>
 </html>
