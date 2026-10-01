@@ -1,18 +1,27 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
   <meta charset="UTF-8">
 
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1.0">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
 
   <title>Student Rewards Scanner</title>
 
-  <script src="https://unpkg.com/html5-qrcode"></script>
+  <!-- Barcode Scanner Library -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
   <style>
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
+      font-family: Arial, Helvetica, sans-serif;
       background: #f4f6f8;
       margin: 0;
       padding: 20px;
@@ -20,6 +29,7 @@
     }
 
     .container {
+      width: 100%;
       max-width: 500px;
       margin: 20px auto;
       background: white;
@@ -29,37 +39,71 @@
     }
 
     h1 {
-      margin-bottom: 5px;
+      margin: 0 0 5px 0;
+      font-size: 30px;
     }
 
     .subtitle {
       color: #666;
       margin-bottom: 25px;
+      font-size: 17px;
     }
 
-    button {
-      width: 95%;
+    .scan-button {
+      width: 100%;
       padding: 18px;
       font-size: 20px;
       font-weight: bold;
       border: none;
-      border-radius: 10px;
+      border-radius: 12px;
       cursor: pointer;
       background: #188038;
       color: white;
+      margin-bottom: 15px;
+    }
+
+    .scan-button:disabled {
+      opacity: .6;
+    }
+
+    .test-button {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: bold;
+      border: 2px solid #ccc;
+      border-radius: 12px;
+      cursor: pointer;
+      background: white;
       margin-bottom: 20px;
+    }
+
+    .instructions {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 15px;
     }
 
     #reader {
       width: 100%;
       margin: 15px auto;
+      overflow: hidden;
+      border-radius: 12px;
     }
 
-    .result {
-      margin-top: 20px;
-      padding: 20px;
-      border-radius: 12px;
+    .status {
       display: none;
+      margin-top: 20px;
+      padding: 18px;
+      border-radius: 12px;
+      font-size: 16px;
+      line-height: 1.4;
+    }
+
+    .info {
+      display: block;
+      background: #eef3fd;
+      border: 2px solid #4285f4;
     }
 
     .success {
@@ -74,172 +118,533 @@
       border: 2px solid #d93025;
     }
 
-    .barcode {
-      font-size: 30px;
+    .barcode-number {
+      font-size: 34px;
       font-weight: bold;
-      margin-top: 10px;
+      margin-top: 12px;
+      word-break: break-all;
     }
 
-    .instructions {
-      color: #666;
-      font-size: 14px;
-      margin-bottom: 20px;
+    .diagnostic {
+      margin-top: 25px;
+      padding-top: 20px;
+      border-top: 1px solid #ddd;
+      color: #777;
+      font-size: 13px;
     }
+
   </style>
 </head>
 
+
 <body>
 
-<div class="container">
+  <div class="container">
 
-  <h1>🏆 Student Rewards</h1>
+    <h1>🏆 Student Rewards</h1>
 
-  <div class="subtitle">
-    Sporting Event Check-In
+    <div class="subtitle">
+      Sporting Event Check-In
+    </div>
+
+
+    <button
+      id="scanButton"
+      class="scan-button"
+      type="button"
+    >
+      📷 SCAN STUDENT BADGE
+    </button>
+
+
+    <div class="instructions">
+      Tap the button and allow camera access when prompted.
+      Then point the back camera at the barcode.
+    </div>
+
+
+    <div id="reader"></div>
+
+
+    <div
+      id="status"
+      class="status"
+    ></div>
+
+
+    <div class="diagnostic">
+
+      Having trouble?
+
+      <br><br>
+
+      <button
+        id="testButton"
+        class="test-button"
+        type="button"
+      >
+        TEST BUTTON
+      </button>
+
+      <div id="libraryStatus">
+        Checking scanner...
+      </div>
+
+    </div>
+
   </div>
-
-  <button onclick="startScanner()">
-    📷 SCAN STUDENT BADGE
-  </button>
-
-  <div class="instructions">
-    Point the back camera at the barcode on the student's ID badge.
-  </div>
-
-  <div id="reader"></div>
-
-  <div id="result" class="result"></div>
-
-</div>
 
 
 <script>
 
-let scanner;
-let scanLocked = false;
+  let scanner = null;
+  let scanLocked = false;
 
 
-function startScanner() {
+  // -----------------------------
+  // PAGE LOADED
+  // -----------------------------
 
-  scanLocked = false;
+  window.addEventListener("load", function() {
 
-  const result =
-    document.getElementById("result");
+    const scanButton =
+      document.getElementById("scanButton");
 
-  result.style.display = "block";
-  result.className = "result";
-  result.innerHTML = "Starting camera...";
-
-
-  if (typeof Html5Qrcode === "undefined") {
-
-    result.className = "result error";
-
-    result.innerHTML =
-      "❌ Barcode scanner library did not load.";
-
-    return;
-  }
+    const testButton =
+      document.getElementById("testButton");
 
 
-  scanner =
-    new Html5Qrcode("reader");
+    scanButton.addEventListener(
+      "click",
+      startScanner
+    );
 
 
-  const config = {
-
-    fps: 10,
-
-    qrbox: function(width, height) {
-
-      return {
-        width: Math.floor(width * 0.85),
-        height: Math.floor(width * 0.35)
-      };
-
-    },
-
-    formatsToSupport: [
-      Html5QrcodeSupportedFormats.CODE_39,
-      Html5QrcodeSupportedFormats.CODE_93,
-      Html5QrcodeSupportedFormats.CODE_128,
-      Html5QrcodeSupportedFormats.CODABAR,
-      Html5QrcodeSupportedFormats.ITF
-    ]
-  };
+    testButton.addEventListener(
+      "click",
+      testButtonFunction
+    );
 
 
-  scanner.start(
-
-    { facingMode: "environment" },
-
-    config,
-
-    barcodeFound,
-
-    function(errorMessage) {
-      // Scanner is searching for a barcode.
-    }
-
-  )
-
-  .then(function() {
-
-    result.innerHTML =
-      "Camera active — scan a badge.";
-
-  })
-
-  .catch(function(error) {
-
-    result.className =
-      "result error";
-
-    result.innerHTML =
-      "<strong>Camera Error</strong><br><br>" +
-      String(error);
+    checkLibrary();
 
   });
 
-}
 
 
-function barcodeFound(decodedText) {
+  // -----------------------------
+  // TEST NORMAL JAVASCRIPT
+  // -----------------------------
 
-  if (scanLocked) {
-    return;
+  function testButtonFunction() {
+
+    alert("The button is working!");
+
   }
 
-  scanLocked = true;
 
 
-  const result =
-    document.getElementById("result");
+  // -----------------------------
+  // CHECK SCANNER LIBRARY
+  // -----------------------------
+
+  function checkLibrary() {
+
+    const libraryStatus =
+      document.getElementById("libraryStatus");
 
 
-  result.className =
-    "result success";
+    if (typeof Html5Qrcode === "undefined") {
+
+      libraryStatus.innerHTML =
+        "❌ Barcode scanner library did NOT load.";
+
+      libraryStatus.style.color =
+        "#d93025";
+
+    }
+
+    else {
+
+      libraryStatus.innerHTML =
+        "✅ Barcode scanner library loaded.";
+
+      libraryStatus.style.color =
+        "#188038";
+
+    }
+
+  }
 
 
-  result.innerHTML =
-    "✅ <strong>BARCODE READ!</strong>" +
-    "<div class='barcode'>" +
-    decodedText +
-    "</div>";
+
+  // -----------------------------
+  // START CAMERA
+  // -----------------------------
+
+  async function startScanner() {
+
+    const scanButton =
+      document.getElementById("scanButton");
 
 
-  if (scanner) {
+    scanLocked = false;
 
-    scanner.stop()
-      .then(function() {
+
+    showStatus(
+      "Button worked. Preparing camera...",
+      "info"
+    );
+
+
+    // Make sure scanner library loaded
+
+    if (typeof Html5Qrcode === "undefined") {
+
+      showStatus(
+        "❌ The barcode scanner library did not load.",
+        "error"
+      );
+
+      return;
+
+    }
+
+
+    // Make sure browser supports camera
+
+    if (
+      !navigator.mediaDevices ||
+      !navigator.mediaDevices.getUserMedia
+    ) {
+
+      showStatus(
+        "❌ This browser is not giving the webpage access to the camera API.",
+        "error"
+      );
+
+      return;
+
+    }
+
+
+    scanButton.disabled = true;
+
+    scanButton.innerText =
+      "STARTING CAMERA...";
+
+
+    try {
+
+      showStatus(
+        "Requesting camera permission...",
+        "info"
+      );
+
+
+      // This forces Safari to request camera
+      // permission directly.
+
+      const permissionStream =
+        await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: {
+              ideal: "environment"
+            }
+          },
+          audio: false
+        });
+
+
+      // Permission worked.
+      // Stop this temporary stream so
+      // html5-qrcode can take over.
+
+      permissionStream
+        .getTracks()
+        .forEach(function(track) {
+          track.stop();
+        });
+
+
+      showStatus(
+        "✅ Camera permission granted. Starting barcode scanner...",
+        "info"
+      );
+
+
+      await beginBarcodeScanner();
+
+
+    }
+
+    catch (error) {
+
+      scanButton.disabled = false;
+
+      scanButton.innerText =
+        "📷 SCAN STUDENT BADGE";
+
+
+      showStatus(
+        "<strong>Camera could not start.</strong>" +
+        "<br><br>" +
+        "Error name: " +
+        escapeHtml(error.name || "Unknown") +
+        "<br><br>" +
+        "Error message: " +
+        escapeHtml(error.message || String(error)),
+        "error"
+      );
+
+    }
+
+  }
+
+
+
+  // -----------------------------
+  // START BARCODE READER
+  // -----------------------------
+
+  async function beginBarcodeScanner() {
+
+    const scanButton =
+      document.getElementById("scanButton");
+
+
+    try {
+
+      scanner =
+        new Html5Qrcode("reader");
+
+
+      const config = {
+
+        fps: 10,
+
+        qrbox: function(
+          viewfinderWidth,
+          viewfinderHeight
+        ) {
+
+          let width =
+            Math.floor(
+              viewfinderWidth * 0.85
+            );
+
+
+          let height =
+            Math.floor(
+              width * 0.35
+            );
+
+
+          if (
+            height >
+            viewfinderHeight * 0.8
+          ) {
+
+            height =
+              Math.floor(
+                viewfinderHeight * 0.8
+              );
+
+          }
+
+
+          return {
+            width: width,
+            height: height
+          };
+
+        },
+
+        formatsToSupport: [
+
+          Html5QrcodeSupportedFormats.CODE_39,
+
+          Html5QrcodeSupportedFormats.CODE_93,
+
+          Html5QrcodeSupportedFormats.CODE_128,
+
+          Html5QrcodeSupportedFormats.CODABAR,
+
+          Html5QrcodeSupportedFormats.ITF
+
+        ]
+
+      };
+
+
+      await scanner.start(
+
+        {
+          facingMode: "environment"
+        },
+
+        config,
+
+        barcodeFound,
+
+        function(errorMessage) {
+
+          // Normal scan failures happen
+          // constantly while searching.
+          // We intentionally ignore them.
+
+        }
+
+      );
+
+
+      scanButton.innerText =
+        "📷 CAMERA ACTIVE";
+
+
+      showStatus(
+        "Camera is active. Hold the barcode inside the scanning area.",
+        "info"
+      );
+
+    }
+
+    catch (error) {
+
+      scanButton.disabled = false;
+
+      scanButton.innerText =
+        "📷 SCAN STUDENT BADGE";
+
+
+      showStatus(
+        "<strong>Barcode scanner could not start.</strong>" +
+        "<br><br>" +
+        "Error: " +
+        escapeHtml(
+          error.message ||
+          String(error)
+        ),
+        "error"
+      );
+
+    }
+
+  }
+
+
+
+  // -----------------------------
+  // BARCODE FOUND
+  // -----------------------------
+
+  async function barcodeFound(
+    decodedText,
+    decodedResult
+  ) {
+
+    if (scanLocked) {
+      return;
+    }
+
+
+    scanLocked = true;
+
+
+    if (navigator.vibrate) {
+
+      navigator.vibrate(150);
+
+    }
+
+
+    showStatus(
+      "✅ <strong>BARCODE READ!</strong>" +
+      "<div class='barcode-number'>" +
+      escapeHtml(decodedText) +
+      "</div>",
+      "success"
+    );
+
+
+    try {
+
+      if (scanner) {
+
+        await scanner.stop();
+
         scanner.clear();
-      });
+
+      }
+
+    }
+
+    catch (error) {
+
+      console.log(error);
+
+    }
+
+
+    const scanButton =
+      document.getElementById("scanButton");
+
+
+    scanButton.disabled = false;
+
+    scanButton.innerText =
+      "📷 SCAN ANOTHER BADGE";
 
   }
 
-}
+
+
+  // -----------------------------
+  // DISPLAY STATUS
+  // -----------------------------
+
+  function showStatus(
+    message,
+    type
+  ) {
+
+    const status =
+      document.getElementById("status");
+
+
+    status.className =
+      "status " + type;
+
+
+    status.innerHTML =
+      message;
+
+  }
+
+
+
+  // -----------------------------
+  // BASIC HTML SAFETY
+  // -----------------------------
+
+  function escapeHtml(value) {
+
+    return String(value)
+
+      .replaceAll("&", "&amp;")
+
+      .replaceAll("<", "&lt;")
+
+      .replaceAll(">", "&gt;")
+
+      .replaceAll('"', "&quot;")
+
+      .replaceAll("'", "&#039;");
+
+  }
 
 </script>
 
 </body>
+
 </html>
